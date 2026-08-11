@@ -2,7 +2,7 @@
 const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev";
 
 // 2. Direct Sqorz Event JSON URL (Replace this string with your real Sqorz link if different)
-const SQORZ_TARGET_URL = "https://our.sqorz.com/json/event/YOUR_EVENT_ID";
+const SQORZ_TARGET_URL = "https://our.sqorz.com/json/event/6a06bedb106401f621fe2662";
 
 async function loadSqorzData() {
   try {
