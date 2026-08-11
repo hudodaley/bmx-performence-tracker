@@ -1,284 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your BMX Performance</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your BMX PB's</title>
+  <style>
+    /* Full Black Background */
+    body {
+      background-color: #000000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #CCFF00; /* Neon Yellow Text everywhere */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+    /* Main Container */
+    .container {
+      background-color: #111111;
+      width: 100%;
+      max-width: 480px;
+      padding: 25px;
+      border-radius: 20px;
+      border: 2px solid #CCFF00;
+      box-shadow: 0 0 20px rgba(204, 255, 0, 0.2);
+      text-align: center;
+    }
 
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #080c0e;
-            color: white;
-        }
+    /* Header Styling */
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      letter-spacing: 1px;
+      color: #CCFF00;
+      text-transform: uppercase;
+    }
 
-        header {
-            padding: 30px 20px;
-            text-align: center;
-            background: #050708;
-            border-bottom: 2px solid #13c8d4;
-        }
+    .subtitle {
+      font-size: 13px;
+      color: #CCFF00; /* Changed from blue/white to Neon Yellow */
+      margin-bottom: 25px;
+      line-height: 1.4;
+    }
 
-        .logo {
-            font-size: 38px;
-            font-weight: 900;
-            letter-spacing: 3px;
-        }
+    /* Dropdown Selectors */
+    .selector-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
 
-        .tagline {
-            color: #13c8d4;
-            margin-top: 8px;
-            font-weight: bold;
-        }
+    label {
+      font-size: 12px;
+      text-align: left;
+      font-weight: bold;
+      color: #CCFF00;
+      margin-bottom: -6px;
+      text-transform: uppercase;
+    }
 
-        main {
-            max-width: 1100px;
-            margin: auto;
-            padding: 20px;
-        }
+    select {
+      background-color: #1a1a1a;
+      color: #CCFF00; /* Changed selector text to Neon Yellow */
+      border: 2px solid #CCFF00; /* Changed border to Neon Yellow */
+      padding: 12px 15px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      outline: none;
+      width: 100%;
+      cursor: pointer;
+    }
 
-        .selectors {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
+    select:focus {
+      box-shadow: 0 0 10px rgba(204, 255, 0, 0.5);
+    }
 
-        .card {
-            background: #11171a;
-            border: 1px solid #263136;
-            border-radius: 15px;
-            padding: 20px;
-        }
+    /* Cards Styling */
+    .cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
 
-        label {
-            display: block;
-            color: #8c989d;
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
+    .card {
+      background-color: #1a1a1a;
+      border: 1px solid #333333;
+      padding: 20px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        select {
-            width: 100%;
-            padding: 14px;
-            background: #080c0e;
-            color: white;
-            border: 1px solid #39464b;
-            border-radius: 8px;
-            font-size: 16px;
-        }
+    .card-title {
+      font-size: 14px;
+      color: #CCFF00;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
 
-        .rider {
-            font-size: 34px;
-            font-weight: 900;
-            margin-bottom: 5px;
-        }
+    .card-value {
+      font-size: 26px;
+      font-weight: bold;
+      color: #CCFF00;
+    }
 
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .stat-title {
-            color: #aab5b9;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .stat-number {
-            font-size: 48px;
-            font-weight: 900;
-            margin: 10px 0;
-        }
-
-        .unit {
-            color: #899499;
-            font-size: 13px;
-        }
-
-        .green {
-            color: #25d6a1;
-            font-weight: bold;
-        }
-
-        h2 {
-            margin-top: 30px;
-        }
-
-        .history {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .history th,
-        .history td {
-            padding: 13px 8px;
-            text-align: left;
-            border-bottom: 1px solid #273136;
-        }
-
-        .history th {
-            color: #7f8b90;
-            font-size: 12px;
-        }
-
-        .empty {
-            color: #7f8b90;
-            text-align: center;
-            padding: 30px;
-        }
-
-        @media (max-width: 650px) {
-            .selectors,
-            .stats {
-                grid-template-columns: 1fr;
-            }
-
-            .logo {
-                font-size: 28px;
-            }
-
-            .rider {
-                font-size: 27px;
-            }
-
-            .stat-number {
-                font-size: 40px;
-            }
-        }
-    </style>
+    /* Status Indicator */
+    #status {
+      font-size: 12px;
+      color: #CCFF00;
+      margin-top: 15px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+  </style>
 </head>
-
 <body>
 
-<header>
-    <div class="logo"> Your BMX PERFORMANCE</div>
-    <div class="tagline">Be your best.</div>
-</header>
+  <div class="container">
+    <h1>Your BMX PB's</h1>
+    <div class="subtitle">Don't go searching for your pb's for hours go to Your BMX PB's</div>
 
-<main>
+    <div class="selector-group">
+      <label for="track-select">Select Club / Track:</label>
+      <select id="track-select" onchange="loadClubData()">
+        <option value="rockhampton">Rockhampton BMX</option>
+        <option value="harbourcity">Harbour City BMX</option>
+        <option value="cairns">Cairns BMX</option>
+        </select>
 
-    <div class="selectors">
-
-        <div class="card">
-            <label>CHOOSE RIDER</label>
-
-            <select id="rider">
-                <option>Hudson Daley</option>
-            </select>
-        </div>
-
-        <div class="card">
-            <label>CHOOSE TRACK</label>
-
-            <select id="track">
-                <option>Rockhampton BMX</option>
-            </select>
-        </div>
-
+      <label for="rider-select">Select Rider:</label>
+      <select id="rider-select" onchange="calculateRiderPBs()">
+        <option value="">-- Loading Riders --</option>
+      </select>
     </div>
 
-    <div class="card">
+    <div class="cards-container">
+      <div class="card">
+        <div class="card-title">Gate PB</div>
+        <div class="card-value" id="gate-pb">--</div>
+      </div>
 
-        <div class="rider">Hudson Daley</div>
-
-        <div style="color:#13c8d4;font-weight:bold;">
-            ROCKHAMPTON BMX
-        </div>
-
-        <div class="stats">
-
-            <div class="card">
-                <div class="stat-title">🚦 BEST GATE PB</div>
-
-                <div class="stat-number">
-                    --
-                </div>
-
-                <div class="unit">
-                    SECONDS
-                </div>
-
-                <p class="green">
-                    Waiting for SQORZ data
-                </p>
-            </div>
-
-            <div class="card">
-                <div class="stat-title">🏁 RACE LAP PB</div>
-
-                <div class="stat-number">
-                    --
-                </div>
-
-                <div class="unit">
-                    SECONDS
-                </div>
-
-                <p class="green">
-                    Waiting for SQORZ data
-                </p>
-            </div>
-
-        </div>
-
+      <div class="card">
+        <div class="card-title">Whole Lap PB</div>
+        <div class="card-value" id="lap-pb">--</div>
+      </div>
     </div>
 
-    <h2>📈 </h2>
+    <div id="status">Select a club to load riders...</div>
+  </div>
 
-    <div class="card">
+  <script>
+    const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev";
+    
+    // Store club data in memory
+    let clubEventsData = [];
+    let ridersMap = {}; // Maps Rider Name -> Array of recorded times
 
-        <p>
+    async function loadClubData() {
+      const statusEl = document.getElementById("status");
+      const clubCode = document.getElementById("track-select").value;
+      const riderSelect = document.getElementById("rider-select");
+
+      riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
+      document.getElementById("gate-pb").textContent = "--";
+      document.getElementById("lap-pb").textContent = "--";
+      statusEl.textContent = `Fetching club data for ${clubCode}...`;
+
+      try {
+        // Fetch organization / club endpoint from Sqorz
+        const orgUrl = `https://our.sqorz.com/api/v1/org/${clubCode}.json`;
+        const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(orgUrl)}`);
         
-            <strong>Waiting for data</strong>
-        </p>
+        if (!response.ok) throw new Error("Could not load club data");
 
-        <p>
-            
-            <strong>Waiting for data</strong>
-        </p>
+        const orgData = await response.json();
+        ridersMap = {}; // Clear previous riders
 
-    </div>
+        // Scan organization object for all riders and times
+        scanObjectForRiders(orgData);
 
-    <
+        // Populate the Rider Dropdown
+        const sortedRiders = Object.keys(ridersMap).sort();
+        
+        if (sortedRiders.length === 0) {
+          riderSelect.innerHTML = '<option value="">No Riders Found</option>';
+          statusEl.textContent = "No rider data found in this club file.";
+          return;
+        }
 
-    <div class="card">
+        riderSelect.innerHTML = '<option value="">-- Select a Rider --</option>';
+        sortedRiders.forEach(rider => {
+          const opt = document.createElement("option");
+          opt.value = rider;
+          opt.textContent = rider;
+          riderSelect.appendChild(opt);
+        });
 
-        <table class="history">
+        // Pre-select Hudson Daley if present
+        const hudsonMatch = sortedRiders.find(r => r.toLowerCase().includes("hudson") && r.toLowerCase().includes("daley"));
+        if (hudsonMatch) {
+          riderSelect.value = hudsonMatch;
+          calculateRiderPBs();
+        }
 
-            <thead>
-                <tr>
-                    <th>DATE</th>
-                    <th>SOURCE</th>
-                    <th>TYPE</th>
-                    <th>TIME</th>
-                </tr>
-            </thead>
+        statusEl.textContent = `Loaded ${sortedRiders.length} riders from ${clubCode}!`;
 
-            <tbody>
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Error loading club data. Try another club.";
+      }
+    }
 
-                <tr>
-                    <td colspan="4" class="empty">
-                        No SQORZ results connected yet.
-                    </td>
-                </tr>
+    // Helper to extract all riders and their timing data
+    function scanObjectForRiders(obj) {
+      if (!obj || typeof obj !== 'object') return;
 
-            </tbody>
+      const name = [
+        obj.name, obj.riderName, obj.rider,
+        (obj.fname && obj.lname) ? `${obj.fname} ${obj.lname}` : null
+      ].filter(Boolean)[0];
 
-        </table>
+      if (name && typeof name === 'string' && name.trim().length > 2) {
+        const cleanName = name.trim();
+        if (!ridersMap[cleanName]) {
+          ridersMap[cleanName] = { gates: [], laps: [] };
+        }
 
-    </div>
+        // Gate times
+        [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1].forEach(val => {
+          const num = parseFloat(val);
+          if (!isNaN(num) && num > 0 && num < 15) ridersMap[cleanName].gates.push(num);
+        });
 
-</main>
-<script src="data.js"></script>
-<script src="sqorz.js"></script>
+        // Lap times
+        [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish].forEach(val => {
+          const num = parseFloat(val);
+          if (!isNaN(num) && num >= 15) ridersMap[cleanName].laps.push(num);
+        });
+      }
+
+      for (let k in obj) {
+        if (obj.hasOwnProperty(k)) scanObjectForRiders(obj[k]);
+      }
+    }
+
+    // Calculate PBs for selected rider
+    function calculateRiderPBs() {
+      const selectedRider = document.getElementById("rider-select").value;
+      if (!selectedRider || !ridersMap[selectedRider]) return;
+
+      const riderData = ridersMap[selectedRider];
+
+      const bestGate = riderData.gates.length > 0 ? Math.min(...riderData.gates) : null;
+      const bestLap = riderData.laps.length > 0 ? Math.min(...riderData.laps) : null;
+
+      document.getElementById("gate-pb").textContent = bestGate !== null ? bestGate.toFixed(3) + "s" : "N/A";
+      document.getElementById("lap-pb").textContent = bestLap !== null ? bestLap.toFixed(3) + "s" : "N/A";
+    }
+
+    window.addEventListener("DOMContentLoaded", loadClubData);
+  </script>
 </body>
 </html>
