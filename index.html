@@ -100,7 +100,7 @@
       <div class="controls">
         <div>
           <label for="club">Select Club / Track</label>
-          <select id="club">
+          <select id="club" onchange="startClubScan()">
             <option value="">-- Choose a Club --</option>
             <option value="rockybmx">Rockhampton BMX</option>
             <option value="hcbmx">Harbour City BMX</option>
@@ -110,18 +110,11 @@
           </select>
         </div>
 
-        <div class="row">
-          <div class="col">
-            <label for="rider">Select Rider</label>
-            <select id="rider" disabled>
-              <option value="">-- Select a Club First --</option>
-            </select>
-          </div>
-
-          <div style="width:120px;">
-            <label>&nbsp;</label>
-            <button id="loadClubBtn">Load Riders</button>
-          </div>
+        <div>
+          <label for="rider">Select Rider</label>
+          <select id="rider" disabled>
+            <option value="">-- Select a Club First --</option>
+          </select>
         </div>
 
         <div class="row" style="gap:8px;">
@@ -159,7 +152,6 @@
     </div>
   </div>
 
-  <!-- Spinner / progress overlay -->
   <div class="overlay" id="overlay" aria-hidden="true">
     <div class="spinner-box" role="status" aria-live="polite">
       <div class="spinner" aria-hidden="true"></div>
@@ -172,13 +164,6 @@
   </div>
 
 <script>
-/* =====================================================
-   Robust deep-scan implementation with cancel, responsive
-   - If you hit CORS errors, set PROXY_URL to a working proxy that forwards requests.
-   - Example proxy usage (Cloudflare Worker): https://your-proxy/?url=<encoded>
-   - Set PROXY_URL below to that prefix (including ?url= or similar) if needed.
-===================================================== */
-
 const CLUBS = {
   rockybmx: "Rockhampton BMX",
   hcbmx: "Harbour City BMX",
@@ -187,14 +172,11 @@ const CLUBS = {
   bmxch: "Central Highlands BMX Club"
 };
 
-// If your browser blocks cross-origin requests, set PROXY_URL to a working proxy prefix.
-// Example: const PROXY_URL = "https://your-proxy.example.com/?url=";
-// Leave empty to fetch directly.
-const PROXY_URL = ""; // <-- set if required
+// Worker Proxy URL
+const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev?url=";
 
 const clubEl = document.getElementById("club");
 const riderEl = document.getElementById("rider");
-const loadClubBtn = document.getElementById("loadClubBtn");
 const cancelBtn = document.getElementById("cancelBtn");
 const clearBtn = document.getElementById("clearBtn");
 const statusEl = document.getElementById("status");
@@ -207,12 +189,12 @@ const lapPBEl = document.getElementById("lapPB");
 const monthlySection = document.getElementById("monthlySection");
 const monthlyTableBody = document.querySelector("#monthlyTable tbody");
 
-let ridersData = {}; // { "Rider Name": [ {date: Date, gate: number|null, lap: number|null}, ... ] }
+let ridersData = {};
 let abortController = null;
 let isScanning = false;
 
 /* -------------------------
-   fetch helper with optional proxy and abort support
+   Fetch helper with worker proxy and abort support
 --------------------------*/
 async function fetchJsonWithAbort(url, signal) {
   let finalUrl = url;
@@ -230,23 +212,12 @@ async function fetchJsonWithAbort(url, signal) {
 --------------------------*/
 function collectEventIdsFromOrgJson(obj) {
   const ids = new Set();
-  const pattern = /^[a-f0-9]{24}$/i;
-  function scan(node) {
-    if (!node) return;
-    if (Array.isArray(node)) { node.forEach(scan); return; }
-    if (typeof node === "object") {
-      for (const k of Object.keys(node)) {
-        const v = node[k];
-        if (typeof v === "string") {
-          const s = v.trim();
-          if (pattern.test(s)) ids.add(s);
-        } else if (typeof v === "object") {
-          scan(v);
-        }
-      }
-    }
+  const pattern = /[a-f0-9]{24}/gi;
+  const strData = JSON.stringify(obj);
+  const matches = strData.match(pattern);
+  if (matches) {
+    matches.forEach(id => ids.add(id));
   }
-  scan(obj);
   return Array.from(ids);
 }
 
@@ -256,13 +227,13 @@ function extractRiderNameFromNode(node) {
   for (const key of candidates) {
     if (node[key] && typeof node[key] === "string") {
       const s = node[key].trim();
-      if (s.length > 1 && !/^\d+$/.test(s)) return s;
+      if (s.length > 1 && !/^\d+$/.test(s) && !s.toLowerCase().includes("bmx club") && !s.toLowerCase().includes("official result")) return s;
     }
   }
   const first = node.firstName || node.fname || node.givenName;
   const last = node.lastName || node.lname || node.familyName;
   if (first && last && typeof first === "string" && typeof last === "string") {
-    const combined = `${first} ${last}`.trim();
+    const combined = `${first}${last}`.trim();
     if (combined.length > 1) return combined;
   }
   return null;
@@ -296,6 +267,7 @@ function extractTimingsFromNode(node) {
     const val = node[key];
     const keyLower = key.toLowerCase();
     if (["name","ridername","rider","fullname","firstname","lastname","fname","lname"].includes(keyLower)) continue;
+    
     if (typeof val === "object") {
       const nested = extractTimingsFromNode(val);
       gates.push(...nested.gates);
@@ -304,12 +276,8 @@ function extractTimingsFromNode(node) {
     }
     const seconds = parseToSeconds(val);
     if (seconds == null || seconds <= 0) continue;
-    if (keyLower.includes("gate") || keyLower.includes("split") || keyLower === "g" || keyLower === "s1") {
-      if (seconds >= 0.8 && seconds <= 6) gates.push(seconds);
-    }
-    if (keyLower.includes("laptime") || keyLower.includes("finishtime") || keyLower === "time" || keyLower === "finish" || keyLower === "lap" || keyLower === "t") {
-      if (seconds >= 10 && seconds <= 300) laps.push(seconds);
-    }
+    if (seconds >= 1.200 && seconds <= 5.000) gates.push(seconds);
+    if (seconds >= 26.000 && seconds <= 90.000) laps.push(seconds);
   }
   return { gates, laps };
 }
@@ -355,9 +323,9 @@ function setProgress(percent, sub) {
 }
 
 /* -------------------------
-   Main: load club deep scan with cancel support
+   Main: Auto scan when club changes
 --------------------------*/
-loadClubBtn.addEventListener("click", async () => {
+async function startClubScan() {
   const clubCode = clubEl.value;
   riderEl.innerHTML = '<option>Loading...</option>';
   riderEl.disabled = true;
@@ -365,7 +333,6 @@ loadClubBtn.addEventListener("click", async () => {
   lapPBEl.textContent = "--";
   monthlySection.style.display = "none";
   monthlyTableBody.innerHTML = "";
-  monthlyTableBody.parentElement.style.display = "none";
 
   if (!clubCode) {
     statusEl.textContent = "Please select a club first.";
@@ -373,7 +340,6 @@ loadClubBtn.addEventListener("click", async () => {
     return;
   }
 
-  // prepare abort controller
   if (abortController) {
     try { abortController.abort(); } catch(e) {}
   }
@@ -382,15 +348,13 @@ loadClubBtn.addEventListener("click", async () => {
   cancelBtn.disabled = false;
   isScanning = true;
 
-  statusEl.textContent = `Scanning ${CLUBS[clubCode]} data for events and riders...`;
+  statusEl.textContent = `Scanning ${CLUBS[clubCode]} data...`;
   showOverlay(`Scanning ${CLUBS[clubCode]}...`, "Fetching club JSON");
 
   try {
-    // fetch org JSON
     const orgJson = await fetchJsonWithAbort(`/json/org/${clubCode}`, signal);
-
-    // collect event IDs
     const eventIds = collectEventIdsFromOrgJson(orgJson);
+
     if (!eventIds.length) {
       hideOverlay();
       statusEl.textContent = `No events found for ${CLUBS[clubCode]}.`;
@@ -404,10 +368,9 @@ loadClubBtn.addEventListener("click", async () => {
     const total = eventIds.length;
     let processed = 0;
 
-    // sequential fetch with polite delay and abort checks
     for (const eventId of eventIds) {
       if (signal.aborted) throw new Error("Scan cancelled");
-      setProgress(Math.round((processed / total) * 100), `Loading event ${processed + 1} of ${total}`);
+      setProgress(Math.round((processed / total) * 100), `Loading event ${processed + 1} of${total}`);
       try {
         const eventJson = await fetchJsonWithAbort(`/json/event/${eventId}`, signal);
         const dateStr = eventJson.startDate || eventJson.date || eventJson.created || null;
@@ -417,9 +380,8 @@ loadClubBtn.addEventListener("click", async () => {
         console.warn("Event fetch/scan error", eventId, e);
       }
       processed++;
-      setProgress(Math.round((processed / total) * 100), `Processed ${processed} / ${total} events`);
-      // small delay to avoid hammering server
-      await new Promise(r => setTimeout(r, 60));
+      setProgress(Math.round((processed / total) * 100), `Processed ${processed} /${total} events`);
+      await new Promise(r => setTimeout(r, 40));
     }
 
     setProgress(100, "Finalizing rider list...");
@@ -434,7 +396,6 @@ loadClubBtn.addEventListener("click", async () => {
       return;
     }
 
-    // populate dropdown
     riderEl.innerHTML = '<option value="">-- Select a Rider --</option>';
     for (const name of riderNames) {
       const opt = document.createElement("option");
@@ -443,7 +404,7 @@ loadClubBtn.addEventListener("click", async () => {
       riderEl.appendChild(opt);
     }
     riderEl.disabled = false;
-    statusEl.textContent = `Loaded ${riderNames.length} riders from ${eventIds.length} events.`;
+    statusEl.textContent = `Loaded ${riderNames.length} riders from${eventIds.length} events.`;
     hideOverlay();
     cancelBtn.disabled = true;
     isScanning = false;
@@ -454,13 +415,13 @@ loadClubBtn.addEventListener("click", async () => {
     if (err.name === "AbortError" || err.message === "Scan cancelled") {
       statusEl.textContent = "Scan cancelled.";
     } else {
-      statusEl.textContent = "Error loading riders. If you see CORS errors in the console, set PROXY_URL to a working proxy.";
+      statusEl.textContent = "Error loading riders. Check connection.";
       riderEl.innerHTML = '<option value="">Error Loading Riders</option>';
     }
     cancelBtn.disabled = true;
     isScanning = false;
   }
-});
+}
 
 /* -------------------------
    Cancel button
@@ -481,6 +442,7 @@ clearBtn.addEventListener("click", () => {
   if (isScanning && abortController) {
     try { abortController.abort(); } catch(e) {}
   }
+  clubEl.value = "";
   riderEl.innerHTML = '<option value="">-- Select a Club First --</option>';
   riderEl.disabled = true;
   gatePBEl.textContent = "--";
@@ -515,61 +477,9 @@ riderEl.addEventListener("change", () => {
     return;
   }
 
-  // overall bests
   const gates = records.filter(r => r.gate != null).map(r => r.gate);
   const laps = records.filter(r => r.lap != null).map(r => r.lap);
   const bestGate = gates.length ? Math.min(...gates) : null;
   const bestLap = laps.length ? Math.min(...laps) : null;
   gatePBEl.textContent = bestGate !== null ? `${bestGate.toFixed(3)}s` : "N/A";
-  lapPBEl.textContent = bestLap !== null ? `${bestLap.toFixed(3)}s` : "N/A";
-
-  // monthly PBs starting March 2026 up to current month
-  const start = new Date("2026-03-01T00:00:00Z");
-  const now = new Date();
-  const months = [];
-  const m = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (m <= now) {
-    months.push(new Date(m.getTime()));
-    m.setMonth(m.getMonth() + 1);
-  }
-
-  const monthBuckets = months.map(d => {
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-    return { key, label: d.toLocaleString(undefined, { month: "short", year: "numeric" }), gates: [], laps: [] };
-  });
-
-  for (const rec of records) {
-    if (!rec.date) continue;
-    const dt = new Date(rec.date);
-    const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;
-    const bucket = monthBuckets.find(b => b.key === key);
-    if (!bucket) continue;
-    if (rec.gate != null) bucket.gates.push(rec.gate);
-    if (rec.lap != null) bucket.laps.push(rec.lap);
-  }
-
-  monthlyTableBody.innerHTML = "";
-  for (const b of monthBuckets) {
-    const bestG = b.gates.length ? Math.min(...b.gates) : null;
-    const bestL = b.laps.length ? Math.min(...b.laps) : null;
-    const tr = document.createElement("tr");
-    const tdMonth = document.createElement("td"); tdMonth.textContent = b.label;
-    const tdGate = document.createElement("td"); tdGate.textContent = bestG !== null ? `${bestG.toFixed(3)}s` : "—";
-    const tdLap = document.createElement("td"); tdLap.textContent = bestL !== null ? `${bestL.toFixed(3)}s` : "—";
-    tr.appendChild(tdMonth); tr.appendChild(tdGate); tr.appendChild(tdLap);
-    monthlyTableBody.appendChild(tr);
-  }
-
-  monthlySection.style.display = "block";
-  statusEl.textContent = `Showing PBs for ${name}.`;
-});
-
-/* -------------------------
-   Keyboard: Enter to load club
---------------------------*/
-clubEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") loadClubBtn.click();
-});
-</script>
-</body>
-</html>
+  lapPBEl.textContent = bestLap !== null ? `${bestLap.toFixed(3)}
