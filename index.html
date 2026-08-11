@@ -38,7 +38,6 @@
       box-shadow: 0 0 15px rgba(204, 255, 0, 0.2);
     }
 
-    /* Hide side images on small mobile screens so it stays clean */
     @media (max-width: 768px) {
       .side-photo {
         display: none;
@@ -256,12 +255,17 @@
       }
 
       const clubInfo = CLUBS_DATA[clubCode];
+      if (!clubInfo) {
+        riderSelect.innerHTML = '<option value="">-- Club Not Found --</option>';
+        return;
+      }
+
       riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
       statusEl.textContent = `Connecting to Sqorz for ${clubInfo.name}...`;
       ridersMap = {};
 
       try {
-        if (clubInfo && clubInfo.events && clubInfo.events.length > 0) {
+        if (clubInfo.events && clubInfo.events.length > 0) {
           for (let eventId of clubInfo.events) {
             const cleanId = eventId.replace(/[^a-zA-Z0-9]/g, "").trim();
             if (!cleanId) continue;
@@ -279,7 +283,7 @@
 
         if (sortedRiders.length === 0) {
           riderSelect.innerHTML = '<option value="">No Riders Found</option>';
-          statusEl.textContent = "Scanned events but found no rider entries.";
+          statusEl.textContent = "No rider entries found for this club.";
           return;
         }
 
