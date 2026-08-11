@@ -234,12 +234,10 @@
       Don't go searching for your PB's for hours — go to Your BMX PB's
     </div>
 
-
     <div class="tabs">
       <button class="tab-button active" data-target="our-sqorz">OUR SQORZ</button>
       <button class="tab-button" data-target="my-sqorz">MY SQORZ</button>
     </div>
-
 
     <div id="our-sqorz" class="page active">
 
@@ -277,7 +275,6 @@
       <div id="status">Select a club above to load riders...</div>
 
     </div>
-
 
     <div id="my-sqorz" class="page">
 
@@ -329,7 +326,7 @@
       <div id="my-status">Enter track & transponder number to calculate PBs...</div>
 
       <div class="small-note">
-        Your BMX PB's only checks races from Jan 1, 2026 onwards.
+        Your BMX PB's only checks races from March 23, 2026 onwards.
       </div>
 
     </div>
@@ -338,7 +335,6 @@
 
 </div>
 
-
 <script>
 
   /* =====================================================
@@ -346,18 +342,20 @@
   ===================================================== */
 
   const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev";
-  const CUTOFF_DATE = new Date("2026-01-01T00:00:00Z");
 
+  // Updated Cutoff Date: March 23, 2026
+  const CUTOFF_DATE = new Date("2026-03-23T00:00:00Z");
+
+  // Club dataset with primary and backup org identifiers for Sqorz
   const CLUBS_DATA = {
-    rockhampton: { name: "Rockhampton BMX", org: "rockybmx" },
-    harbourcity: { name: "Harbour City BMX", org: "harbourcitybmx" },
-    cairns: { name: "Cairns BMX", org: "cairnsbmx" },
-    moranbah: { name: "Moranbah BMX Club", org: "moranbahbmx" },
-    bmxch: { name: "Central Highlands BMX Club", org: "centralhighlandsbmx" }
+    rockhampton: { name: "Rockhampton BMX", orgs: ["rockybmx", "rockhamptonbmx"] },
+    harbourcity: { name: "Harbour City BMX", orgs: ["harbourcitybmx", "harbourcity"] },
+    cairns: { name: "Cairns BMX", orgs: ["cairnsbmx", "cairns"] },
+    moranbah: { name: "Moranbah BMX Club", orgs: ["moranbahbmx", "moranbah"] },
+    bmxch: { name: "Central Highlands BMX Club", orgs: ["centralhighlandsbmx", "bmxch"] }
   };
 
   let ridersMap = {};
-
 
   /* =====================================================
      TAB NAVIGATION SETUP
@@ -375,7 +373,6 @@
     });
   });
 
-
   /* =====================================================
      SQORZ FETCH HELPER
   ===================================================== */
@@ -391,13 +388,25 @@
     return await response.json();
   }
 
-
   /* =====================================================
-     GET FILTERED CLUB EVENTS (2026+ RACE EVENTS ONLY)
+     GET FILTERED CLUB EVENTS (MARCH 23, 2026+ ONWARDS)
   ===================================================== */
 
-  async function getFilteredClubEvents(orgCode) {
-    const data = await fetchSqorzJson(`/json/org/${orgCode}`);
+  async function getFilteredClubEvents(clubInfo) {
+    let rawData = null;
+
+    // Try primary and fallback org codes
+    for (const orgCode of clubInfo.orgs) {
+      try {
+        rawData = await fetchSqorzJson(`/json/org/${orgCode}`);
+        if (rawData) break;
+      } catch (e) {
+        console.warn(`Org slug ${orgCode} failed, trying next...`);
+      }
+    }
+
+    if (!rawData) return [];
+
     const validEvents = [];
 
     function scanForEvents(node) {
@@ -425,7 +434,7 @@
       }
     }
 
-    scanForEvents(data);
+    scanForEvents(rawData);
 
     if (validEvents.length === 0) {
       const eventIdPattern = /^[a-f0-9]{24}$/i;
@@ -449,13 +458,12 @@
         }
       }
 
-      scanAllIds(data);
+      scanAllIds(rawData);
       return Array.from(setIds);
     }
 
     return Array.from(new Set(validEvents));
   }
-
 
   /* =====================================================
      LOAD CLUB (OUR SQORZ TAB)
@@ -485,16 +493,16 @@
     }
 
     riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
-    statusEl.textContent = `🔎 Finding ${clubInfo.name} events from 2026 onwards...`;
+    statusEl.textContent = `🔎 Finding ${clubInfo.name} events from March 23, 2026 onwards...`;
 
     ridersMap = {};
 
     try {
-      const eventIds = await getFilteredClubEvents(clubInfo.org);
+      const eventIds = await getFilteredClubEvents(clubInfo);
 
       if (eventIds.length === 0) {
         riderSelect.innerHTML = '<option value="">No Events Found</option>';
-        statusEl.textContent = `No 2026+ race events found for ${clubInfo.name}.`;
+        statusEl.textContent = `No race events from March 23, 2026+ found for ${clubInfo.name}.`;
         return;
       }
 
@@ -517,7 +525,7 @@
 
       if (sortedRiders.length === 0) {
         riderSelect.innerHTML = '<option value="">No Riders Found</option>';
-        statusEl.textContent = "No riders found in 2026 race events.";
+        statusEl.textContent = "No riders found in race events since March 23, 2026.";
         return;
       }
 
@@ -537,7 +545,6 @@
       statusEl.textContent = "❌ Could not load the SQORZ club data.";
     }
   }
-
 
   /* =====================================================
      RIDER SCANNER & TIME UTILITIES
@@ -655,10 +662,19 @@
         value = value / 1000;
       }
 
-      if (value >= 1.2 && value <= 5) {
+      // Ignore standard 2.000 exact fallback placeholders
+      if (value === 2.0) continue;
+
+      // Real gate times range (e.g., 1.2s to 4.5s)
+      if (
+        value >= 1.2 && 
+        value <= 4.8 && 
+        (keyLower.includes("gate") || keyLower.includes("split") || keyLower === "g" || keyLower === "s1")
+      ) {
         riderRecord.gates.push(value);
       }
 
+      // Real whole lap times range (e.g., 26s to 90s)
       if (
         value >= 26 &&
         value <= 90 &&
@@ -675,7 +691,6 @@
       }
     }
   }
-
 
   /* =====================================================
      CALCULATE PBs (OUR SQORZ TAB)
@@ -697,7 +712,6 @@
 
     document.getElementById("status").textContent = `Showing PBs for ${rider}`;
   }
-
 
   /* =====================================================
      MY SQORZ TRANSPONDER PB SEARCH
@@ -733,10 +747,10 @@
     const laps = [];
 
     try {
-      const eventIds = await getFilteredClubEvents(clubInfo.org);
+      const eventIds = await getFilteredClubEvents(clubInfo);
 
       if (eventIds.length === 0) {
-        statusEl.textContent = `No 2026+ race events found for ${clubInfo.name}.`;
+        statusEl.textContent = `No race events from March 23, 2026+ found for ${clubInfo.name}.`;
         return;
       }
 
