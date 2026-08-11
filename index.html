@@ -72,12 +72,12 @@
       line-height: 1.4;
     }
 
-    /* Input & Selectors */
+    /* Dropdown Selectors */
     .selector-group {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
     }
 
     label {
@@ -89,7 +89,7 @@
       text-transform: uppercase;
     }
 
-    select, input {
+    select {
       background-color: #1a1a1a;
       color: #CCFF00;
       border: 2px solid #CCFF00;
@@ -99,37 +99,11 @@
       font-weight: bold;
       outline: none;
       width: 100%;
-      box-sizing: border-box;
-    }
-
-    select:focus, input:focus {
-      box-shadow: 0 0 10px rgba(204, 255, 0, 0.5);
-    }
-
-    /* Button Styling */
-    .btn {
-      background-color: #CCFF00;
-      color: #000000;
-      border: none;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: bold;
-      text-transform: uppercase;
       cursor: pointer;
-      transition: all 0.2s ease;
-      width: 100%;
-      margin-top: 5px;
     }
 
-    .btn:hover {
-      background-color: #b3e600;
-      box-shadow: 0 0 12px rgba(204, 255, 0, 0.6);
-    }
-
-    .divider {
-      border-top: 1px dashed #333;
-      margin: 20px 0;
+    select:focus {
+      box-shadow: 0 0 10px rgba(204, 255, 0, 0.5);
     }
 
     /* Cards Styling */
@@ -185,7 +159,7 @@
         <label for="track-select">Select Club / Track:</label>
         <select id="track-select" onchange="loadClubData()">
           <option value="">-- Choose a Club --</option>
-          <option value="rockybmx">Rockhampton BMX</option>
+          <option value="rockhampton">Rockhampton BMX</option>
           <option value="harbourcity">Harbour City BMX</option>
           <option value="cairns">Cairns BMX</option>
           <option value="moranbah">Moranbah BMX club</option>
@@ -198,14 +172,6 @@
         </select>
       </div>
 
-      <div class="divider"></div>
-
-      <div class="selector-group">
-        <label for="transponder-input">Or Search By Transponder / Sqorz ID:</label>
-        <input type="text" id="transponder-input" placeholder="e.g. TX-12345 or Sqorz ID">
-        <button class="btn" onclick="lookupTransponderPBs()">Find My Session PBs</button>
-      </div>
-
       <div class="cards-container">
         <div class="card">
           <div class="card-title">Gate PB</div>
@@ -213,4 +179,252 @@
         </div>
 
         <div class="card">
-          <div class="card-title">
+          <div class="card-title">Whole Lap PB</div>
+          <div class="card-value" id="lap-pb">--</div>
+        </div>
+      </div>
+
+      <div id="status">Select a club above to start loading riders...</div>
+    </div>
+
+    <img class="side-photo" src="https://images.unsplash.com/photo-1517649763962-0c6232661a0b?auto=format&fit=crop&w=400&q=80" alt="BMX Right Side Photo">
+  </div>
+
+  <script>
+    const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev";
+
+    // --- CLUBS & EVENT IDs ---
+    const CLUBS_DATA = {
+      "rockhampton": {
+        name: "Rockhampton BMX",
+        events: [
+          "6a06bedb106401f621fe2662",
+          "6a0ff3b66075f1e7948d9259",
+          "6a1929336075f61de2a545ac"
+        ]
+      },
+      "harbourcity": {
+        name: "Harbour City BMX",
+        events: []
+      },
+      "cairns": {
+        name: "Cairns BMX",
+        events: []
+      },
+      "moranbah": {
+        name: "Moranbah BMX club",
+        events: []
+      },
+      "bmxch": {
+        name: "Central Highlands BMX club",
+        events: [
+          "6a6c4de482c75fab486118dc",
+          "6a3e2d20cf7ed063f833a09e",
+          "6a2bad04963c283595b62682",
+          "6a1940156075f1e7948e8013",
+          "6a06c57e106401f621fe26ba",
+          "69fd909887e58ae42e98e966",
+          "69eb189e85a564f977af05db",
+          "69ce1abf4ed31ae3c9fdda1e",
+          "69c4e23f0bc99bebb1dc78b9"
+        ]
+      }
+    };
+
+    let ridersMap = {};
+
+    async function fetchSqorzJson(urlPath) {
+      const targetUrl = `https://our.sqorz.com${urlPath}`;
+      const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    }
+
+    async function loadClubData() {
+      const statusEl = document.getElementById("status");
+      const clubCode = document.getElementById("track-select").value;
+      const riderSelect = document.getElementById("rider-select");
+
+      document.getElementById("gate-pb").textContent = "--";
+      document.getElementById("lap-pb").textContent = "--";
+
+      if (!clubCode) {
+        riderSelect.innerHTML = '<option value="">-- Select a Club First --</option>';
+        statusEl.textContent = "Select a club above to start loading riders...";
+        return;
+      }
+
+      const clubInfo = CLUBS_DATA[clubCode];
+      if (!clubInfo) {
+        riderSelect.innerHTML = '<option value="">-- Club Not Found --</option>';
+        return;
+      }
+
+      riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
+      statusEl.textContent = `Connecting to Sqorz for ${clubInfo.name}...`;
+      ridersMap = {};
+
+      try {
+        if (clubInfo.events && clubInfo.events.length > 0) {
+          for (let eventId of clubInfo.events) {
+            const cleanId = eventId.replace(/[^a-zA-Z0-9]/g, "").trim();
+            if (!cleanId) continue;
+
+            try {
+              const eventData = await fetchSqorzJson(`/json/event/${cleanId}`);
+              deepScanForRiders(eventData);
+            } catch (e) {
+              console.warn(`Could not fetch event ${cleanId}`, e);
+            }
+          }
+        }
+
+        const sortedRiders = Object.keys(ridersMap).sort();
+
+        if (sortedRiders.length === 0) {
+          riderSelect.innerHTML = '<option value="">No Riders Found</option>';
+          statusEl.textContent = "No rider entries found for this club.";
+          return;
+        }
+
+        riderSelect.innerHTML = '<option value="">-- Select a Rider --</option>';
+        sortedRiders.forEach(rider => {
+          const opt = document.createElement("option");
+          opt.value = rider;
+          opt.textContent = rider;
+          riderSelect.appendChild(opt);
+        });
+
+        statusEl.textContent = `Loaded ${sortedRiders.length} riders!`;
+
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Error fetching data from Sqorz.";
+      }
+    }
+
+    function deepScanForRiders(node, currentRiderName = null) {
+      if (!node) return;
+
+      if (Array.isArray(node)) {
+        for (let item of node) {
+          deepScanForRiders(item, currentRiderName);
+        }
+        return;
+      }
+
+      if (typeof node === 'object') {
+        const foundName = extractRiderName(node);
+        const activeRider = foundName ? formatName(foundName) : currentRiderName;
+
+        if (activeRider) {
+          if (!ridersMap[activeRider]) {
+            ridersMap[activeRider] = { gates: [], laps: [] };
+          }
+          extractTimingsBulletproof(node, ridersMap[activeRider]);
+        }
+
+        for (let key in node) {
+          if (node.hasOwnProperty(key) && typeof node[key] === 'object') {
+            deepScanForRiders(node[key], activeRider);
+          }
+        }
+      }
+    }
+
+    function extractRiderName(obj) {
+      if (typeof obj.name === 'string' && isValidName(obj.name)) return obj.name;
+      if (typeof obj.riderName === 'string' && isValidName(obj.riderName)) return obj.riderName;
+      if (typeof obj.rider === 'string' && isValidName(obj.rider)) return obj.rider;
+      if (typeof obj.fullName === 'string' && isValidName(obj.fullName)) return obj.fullName;
+
+      const f = obj.fname || obj.firstName || obj.givenName;
+      const l = obj.lname || obj.lastName || obj.familyName;
+      if (typeof f === 'string' && typeof l === 'string') {
+        const combined = `${f} ${l}`.trim();
+        if (isValidName(combined)) return combined;
+      }
+
+      return null;
+    }
+
+    function isValidName(str) {
+      if (!str) return false;
+      const s = str.trim();
+      if (s.length < 3) return false;
+      
+      const lower = s.toLowerCase();
+      if (lower.includes("bmx club") || lower.includes("official result") || lower.includes("round ") || lower.includes("class")) {
+        return false;
+      }
+      return true;
+    }
+
+    function formatName(str) {
+      return str.trim().toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function parseToSeconds(val) {
+      if (typeof val === 'number') return val;
+      if (typeof val !== 'string') return null;
+
+      const clean = val.trim();
+      if (!clean) return null;
+
+      if (clean.includes(':')) {
+        const parts = clean.split(':');
+        if (parts.length === 2) {
+          const m = parseFloat(parts[0]);
+          const s = parseFloat(parts[1]);
+          if (!isNaN(m) && !isNaN(s)) return (m * 60) + s;
+        }
+      }
+
+      const num = parseFloat(clean);
+      return isNaN(num) ? null : num;
+    }
+
+    function extractTimingsBulletproof(obj, riderRecord) {
+      for (let key in obj) {
+        if (!obj.hasOwnProperty(key)) continue;
+
+        if (key === 'name' || key === 'riderName' || key === 'rider' || key === 'fullName') continue;
+
+        const k = key.toLowerCase();
+        let val = parseToSeconds(obj[key]);
+
+        if (val === null || val <= 0) continue;
+
+        if (val >= 1000 && val < 120000) {
+          val = val / 1000;
+        }
+
+        // --- GATE SPLIT RANGE (1.200s to 5.000s) ---
+        if (val >= 1.200 && val <= 5.000) {
+          riderRecord.gates.push(val);
+        }
+
+        // --- WHOLE LAP RANGE (26.000s to 90.000s) ---
+        if (val >= 26.000 && val <= 90.000) {
+          if (k.includes("laptime") || k.includes("finishtime") || k === "time" || k === "finish" || k === "lap" || k === "t") {
+            riderRecord.laps.push(val);
+          }
+        }
+      }
+    }
+
+    function calculateRiderPBs() {
+      const selectedRider = document.getElementById("rider-select").value;
+      if (!selectedRider || !ridersMap[selectedRider]) return;
+
+      const riderData = ridersMap[selectedRider];
+
+      const bestGate = riderData.gates.length > 0 ? Math.min(...riderData.gates) : null;
+      const bestLap = riderData.laps.length > 0 ? Math.min(...riderData.laps) : null;
+
+      document.getElementById("gate-pb").textContent = bestGate !== null ? bestGate.toFixed(3) + "s" : "N/A";
+      document.getElementById("lap-pb").textContent = bestLap !== null ? bestLap.toFixed(3) + "s" : "N/A";
+    }
+  </script>
+</body>
+</html>
