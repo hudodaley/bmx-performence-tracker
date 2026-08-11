@@ -321,7 +321,6 @@
       return str.trim().toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
     }
 
-    // Helper to parse clock strings like "0:28.450" or numbers
     function parseToSeconds(val) {
       if (typeof val === 'number') return val;
       if (typeof val !== 'string') return null;
@@ -329,7 +328,6 @@
       const clean = val.trim();
       if (!clean) return null;
 
-      // Handles MM:SS.sss clock strings
       if (clean.includes(':')) {
         const parts = clean.split(':');
         if (parts.length === 2) {
@@ -347,22 +345,27 @@
       for (let key in obj) {
         if (!obj.hasOwnProperty(key)) continue;
 
+        const keyLower = key.toLowerCase();
         let rawVal = parseToSeconds(obj[key]);
+
         if (rawVal === null || rawVal <= 0) continue;
 
-        // Auto-convert milliseconds to seconds if value is in thousands
+        // Auto-convert milliseconds to seconds
         if (rawVal >= 1000 && rawVal < 120000) {
           rawVal = rawVal / 1000;
         }
 
-        // Gate split detection (1.0s to 15.0s)
+        // Gate / Split detection (1.0s to 15.0s)
         if (rawVal >= 1.0 && rawVal < 15.0) {
           riderRecord.gates.push(rawVal);
         }
 
         // Full lap detection (15.0s to 120.0s)
         if (rawVal >= 15.0 && rawVal < 120.0) {
-          riderRecord.laps.push(rawVal);
+          // Exclude total event cumulative times by checking field names
+          if (!keyLower.includes("total") || keyLower.includes("lap") || keyLower.includes("time") || keyLower.includes("finish")) {
+            riderRecord.laps.push(rawVal);
+          }
         }
       }
     }
