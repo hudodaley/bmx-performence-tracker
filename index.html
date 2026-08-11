@@ -3,11 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Your BMX PB's</title>
 
   <style>
-
     * {
       box-sizing: border-box;
     }
@@ -141,6 +139,7 @@
       font-weight: bold;
       cursor: pointer;
       width: 100%;
+      margin-top: 5px;
     }
 
     .main-button:active {
@@ -211,7 +210,7 @@
        STATUS
     ========================= */
 
-    #status {
+    #status, #my-status {
       font-size: 12px;
       color: #CCFF00;
       margin-top: 15px;
@@ -236,10 +235,6 @@
     </div>
 
 
-    <!-- =========================
-         NAVIGATION
-    ========================= -->
-
     <div class="tabs">
 
       <button
@@ -258,10 +253,6 @@
 
     </div>
 
-
-    <!-- =========================
-         OUR SQORZ PAGE
-    ========================= -->
 
     <div
       id="our-sqorz"
@@ -367,10 +358,6 @@
     </div>
 
 
-    <!-- =========================
-         MY SQORZ PAGE
-    ========================= -->
-
     <div
       id="my-sqorz"
       class="page"
@@ -378,20 +365,29 @@
 
       <div class="info-box">
 
-        <strong>MY SQORZ RESULTS</strong>
+        <strong>MY SQORZ SEARCH</strong>
 
         <br><br>
 
-        Enter your MYLAPS/SQORZ transponder number below.
-
-        <br><br>
-
-        Your personal SQORZ training results will open separately.
+        Select a track and enter your transponder number to find your Personal Bests directly from race events.
 
       </div>
 
 
       <div class="selector-group">
+
+        <label for="my-track-select">
+          Select Club / Track
+        </label>
+
+        <select id="my-track-select">
+          <option value="">-- Choose a Club --</option>
+          <option value="rockhampton">Rockhampton BMX</option>
+          <option value="harbourcity">Harbour City BMX</option>
+          <option value="cairns">Cairns BMX</option>
+          <option value="moranbah">Moranbah BMX Club</option>
+          <option value="bmxch">Central Highlands BMX Club</option>
+        </select>
 
         <label for="my-transponder">
           Transponder Number
@@ -407,41 +403,33 @@
 
         <button
           class="main-button"
-          onclick="openMySqorz()"
+          onclick="searchMyTransponderPBs()"
         >
           FIND MY RESULTS
         </button>
 
       </div>
 
+      <div class="cards-container">
 
-      <div class="info-box">
+        <div class="card">
+          <div class="card-title">Gate PB</div>
+          <div class="card-value" id="my-gate-pb">--</div>
+        </div>
 
-        <strong>How it works</strong>
-
-        <br><br>
-
-        1. Enter your transponder number.
-
-        <br>
-
-        2. Press FIND MY RESULTS.
-
-        <br>
-
-        3. Your My SQORZ page opens.
-
-        <br>
-
-        4. You can see your available training/timing data.
+        <div class="card">
+          <div class="card-title">Whole Lap PB</div>
+          <div class="card-value" id="my-lap-pb">--</div>
+        </div>
 
       </div>
 
+      <div id="my-status">
+        Enter track & transponder number to calculate PBs...
+      </div>
 
       <div class="small-note">
-
-        Your BMX PB's does not store your transponder number.
-
+        Your BMX PB's only checks races from Jan 1, 2026 onwards.
       </div>
 
     </div>
@@ -485,53 +473,14 @@
 
 
   /* =====================================================
-     MY SQORZ
-  ===================================================== */
-
-  function openMySqorz() {
-
-    const input =
-      document
-        .getElementById("my-transponder")
-        .value
-        .trim()
-        .toUpperCase();
-
-    if (!input) {
-
-      alert(
-        "Please enter your transponder number."
-      );
-
-      return;
-    }
-
-
-    /*
-      My SQORZ has public personalised
-      training pages using this format.
-    */
-
-    const url =
-      "https://my.sqorz.com/training/transponder/"
-      + encodeURIComponent(input);
-
-
-    window.open(
-      url,
-      "_blank"
-    );
-
-  }
-
-
-  /* =====================================================
-     OUR SQORZ
+     SQORZ CONFIG & CONSTANTS
   ===================================================== */
 
   const PROXY_URL =
     "https://sqorz-proxy.hudsondaley55.workers.dev";
 
+  // Date limit: Jan 1, 2026 cutoff
+  const CUTOFF_DATE = new Date("2026-01-01T00:00:00Z");
 
   const CLUBS_DATA = {
 
@@ -562,12 +511,11 @@
 
   };
 
-
   let ridersMap = {};
 
 
   /* =====================================================
-     SQORZ FETCH
+     SQORZ FETCH HELPER
   ===================================================== */
 
   async function fetchSqorzJson(urlPath) {
@@ -595,306 +543,157 @@
 
 
   /* =====================================================
-     FIND EVENT IDS
+     FIND EVENT DATA WITH DATE & RACE FILTER (2026+)
   ===================================================== */
 
-  async function getClubEventIds(orgCode) {
+  async function getFilteredClubEvents(orgCode) {
 
     const data =
       await fetchSqorzJson(
         `/json/org/${orgCode}`
       );
 
+    const validEvents = [];
 
-    const eventIds =
-      new Set();
-
-
-    const eventIdPattern =
-      /^[a-f0-9]{24}$/i;
-
-
-    function scan(
-      node,
-      parentKey = ""
-    ) {
-
+    // Helper to check and filter event objects
+    function scanForEvents(node) {
       if (!node) return;
 
-
       if (Array.isArray(node)) {
-
-        for (const item of node) {
-
-          scan(
-            item,
-            parentKey
-          );
-
-        }
-
+        for (const item of node) scanForEvents(item);
         return;
       }
 
+      if (typeof node === "object") {
+        // If node represents an event with date and ID
+        if (node.id && (node.startDate || node.date || node.created)) {
+          const dateStr = node.startDate || node.date || node.created;
+          const eventDate = new Date(dateStr);
+          const isRace = !node.type || node.type.toLowerCase() !== "training";
 
-      if (
-        typeof node !== "object"
-      ) {
-
-        return;
-      }
-
-
-      for (
-        const key of Object.keys(node)
-      ) {
-
-        const value =
-          node[key];
-
-        const lowerKey =
-          key.toLowerCase();
-
-
-        if (
-          typeof value === "string" &&
-          eventIdPattern.test(
-            value.trim()
-          ) &&
-          (
-            lowerKey.includes("event") ||
-            lowerKey === "id" ||
-            lowerKey.includes("key")
-          )
-        ) {
-
-          eventIds.add(
-            value.trim()
-          );
-
+          if (eventDate >= CUTOFF_DATE && isRace) {
+            validEvents.push(node.id);
+          }
         }
 
-
-        if (
-          typeof value === "object"
-        ) {
-
-          scan(
-            value,
-            key
-          );
-
+        for (const key of Object.keys(node)) {
+          if (typeof node[key] === "object") scanForEvents(node[key]);
         }
-
       }
-
     }
 
+    scanForEvents(data);
 
-    scan(data);
+    // Fallback: If no metadata date found, collect all unique valid event IDs
+    if (validEvents.length === 0) {
+      const eventIdPattern = /^[a-f0-9]{24}$/i;
+      const setIds = new Set();
 
+      function scanAllIds(node) {
+        if (!node) return;
+        if (Array.isArray(node)) {
+          for (const item of node) scanAllIds(item);
+          return;
+        }
+        if (typeof node === "object") {
+          for (const key of Object.keys(node)) {
+            const val = node[key];
+            if (typeof val === "string" && eventIdPattern.test(val.trim())) {
+              setIds.add(val.trim());
+            } else if (typeof val === "object") {
+              scanAllIds(val);
+            }
+          }
+        }
+      }
 
-    return Array.from(
-      eventIds
-    );
+      scanAllIds(data);
+      return Array.from(setIds);
+    }
 
+    return Array.from(new Set(validEvents));
   }
 
 
   /* =====================================================
-     LOAD CLUB
+     LOAD CLUB (OUR SQORZ TAB)
   ===================================================== */
 
   async function loadClubData() {
 
-    const statusEl =
-      document.getElementById(
-        "status"
-      );
+    const statusEl = document.getElementById("status");
+    const clubCode = document.getElementById("track-select").value;
+    const riderSelect = document.getElementById("rider-select");
 
-
-    const clubCode =
-      document
-        .getElementById(
-          "track-select"
-        )
-        .value;
-
-
-    const riderSelect =
-      document.getElementById(
-        "rider-select"
-      );
-
-
-    document.getElementById(
-      "gate-pb"
-    ).textContent = "--";
-
-
-    document.getElementById(
-      "lap-pb"
-    ).textContent = "--";
-
+    document.getElementById("gate-pb").textContent = "--";
+    document.getElementById("lap-pb").textContent = "--";
 
     if (!clubCode) {
-
-      riderSelect.innerHTML =
-        '<option value="">-- Select a Club First --</option>';
-
-      statusEl.textContent =
-        "Select a club above to load riders...";
-
+      riderSelect.innerHTML = '<option value="">-- Select a Club First --</option>';
+      statusEl.textContent = "Select a club above to load riders...";
       return;
-
     }
 
-
-    const clubInfo =
-      CLUBS_DATA[clubCode];
-
+    const clubInfo = CLUBS_DATA[clubCode];
 
     if (!clubInfo) {
-
-      statusEl.textContent =
-        "Club not found.";
-
+      statusEl.textContent = "Club not found.";
       return;
-
     }
 
-
-    riderSelect.innerHTML =
-      '<option value="">-- Loading Riders... --</option>';
-
-
-    statusEl.textContent =
-      `🔎 Finding ${clubInfo.name} events on SQORZ...`;
-
+    riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
+    statusEl.textContent = `🔎 Finding ${clubInfo.name} events from 2026 onwards...`;
 
     ridersMap = {};
 
-
     try {
 
-      const eventIds =
-        await getClubEventIds(
-          clubInfo.org
-        );
+      const eventIds = await getFilteredClubEvents(clubInfo.org);
 
-
-      if (
-        eventIds.length === 0
-      ) {
-
-        riderSelect.innerHTML =
-          '<option value="">No Events Found</option>';
-
-        statusEl.textContent =
-          `No SQORZ events were found for ${clubInfo.name}.`;
-
+      if (eventIds.length === 0) {
+        riderSelect.innerHTML = '<option value="">No Events Found</option>';
+        statusEl.textContent = `No 2026+ race events found for ${clubInfo.name}.`;
         return;
-
       }
 
+      statusEl.textContent = `Found ${eventIds.length} race events. Scanning rider timings...`;
 
-      statusEl.textContent =
-        `Found ${eventIds.length} events. Loading riders...`;
-
-
-      for (
-        const eventId of eventIds
-      ) {
-
+      for (const eventId of eventIds) {
         try {
+          const eventData = await fetchSqorzJson(`/json/event/${eventId}`);
 
-          const eventData =
-            await fetchSqorzJson(
-              `/json/event/${eventId}`
-            );
-
-
-          deepScanForRiders(
-            eventData
-          );
-
-
+          // Filter by event date if inside event details
+          const eventDate = new Date(eventData.startDate || eventData.date || Date.now());
+          if (eventDate >= CUTOFF_DATE) {
+            deepScanForRiders(eventData);
+          }
         } catch (error) {
-
-          console.warn(
-            "Could not load event:",
-            eventId,
-            error
-          );
-
+          console.warn("Could not load event:", eventId, error);
         }
-
       }
 
+      const sortedRiders = Object.keys(ridersMap).sort();
 
-      const sortedRiders =
-        Object.keys(
-          ridersMap
-        ).sort();
-
-
-      if (
-        sortedRiders.length === 0
-      ) {
-
-        riderSelect.innerHTML =
-          '<option value="">No Riders Found</option>';
-
-        statusEl.textContent =
-          "No riders were found in the SQORZ events.";
-
+      if (sortedRiders.length === 0) {
+        riderSelect.innerHTML = '<option value="">No Riders Found</option>';
+        statusEl.textContent = "No riders found in 2026 race events.";
         return;
-
       }
 
+      riderSelect.innerHTML = '<option value="">-- Select a Rider --</option>';
 
-      riderSelect.innerHTML =
-        '<option value="">-- Select a Rider --</option>';
+      sortedRiders.forEach(rider => {
+        const option = document.createElement("option");
+        option.value = rider;
+        option.textContent = rider;
+        riderSelect.appendChild(option);
+      });
 
-
-      sortedRiders.forEach(
-        rider => {
-
-          const option =
-            document.createElement(
-              "option"
-            );
-
-
-          option.value =
-            rider;
-
-
-          option.textContent =
-            rider;
-
-
-          riderSelect.appendChild(
-            option
-          );
-
-        }
-      );
-
-
-      statusEl.textContent =
-        `✅ Loaded ${sortedRiders.length} riders from ${eventIds.length} events.`;
+      statusEl.textContent = `✅ Loaded ${sortedRiders.length} riders from ${eventIds.length} events!`;
 
     } catch (error) {
-
-      console.error(
-        error
-      );
-
-
-      statusEl.textContent =
-        "❌ Could not load the SQORZ club data.";
-
+      console.error(error);
+      statusEl.textContent = "❌ Could not load the SQORZ club data.";
     }
 
   }
@@ -904,503 +703,33 @@
      RIDER SCANNER
   ===================================================== */
 
-  function deepScanForRiders(
-    node,
-    currentRiderName = null
-  ) {
+  function deepScanForRiders(node, currentRiderName = null) {
 
     if (!node) return;
 
-
     if (Array.isArray(node)) {
-
-      for (
-        const item of node
-      ) {
-
-        deepScanForRiders(
-          item,
-          currentRiderName
-        );
-
+      for (const item of node) {
+        deepScanForRiders(item, currentRiderName);
       }
-
       return;
-
     }
 
+    if (typeof node === "object") {
 
-    if (
-      typeof node === "object"
-    ) {
-
-      const foundName =
-        extractRiderName(
-          node
-        );
-
-
-      const activeRider =
-        foundName
-          ? formatName(foundName)
-          : currentRiderName;
-
+      const foundName = extractRiderName(node);
+      const activeRider = foundName ? formatName(foundName) : currentRiderName;
 
       if (activeRider) {
-
-        if (
-          !ridersMap[activeRider]
-        ) {
-
+        if (!ridersMap[activeRider]) {
           ridersMap[activeRider] = {
-
             gates: [],
-
             laps: []
-
           };
-
         }
 
-
-        extractTimingsBulletproof(
-          node,
-          ridersMap[activeRider]
-        );
-
+        extractTimingsBulletproof(node, ridersMap[activeRider]);
       }
 
-
-      for (
-        const key in node
-      ) {
-
-        if (
-          node.hasOwnProperty(key) &&
-          typeof node[key] === "object"
-        ) {
-
-          deepScanForRiders(
-            node[key],
-            activeRider
-          );
-
-        }
-
-      }
-
-    }
-
-  }
-
-
-  /* =====================================================
-     RIDER NAME
-  ===================================================== */
-
-  function extractRiderName(
-    obj
-  ) {
-
-    if (
-      typeof obj.name === "string" &&
-      isValidName(obj.name)
-    ) {
-
-      return obj.name;
-
-    }
-
-
-    if (
-      typeof obj.riderName === "string" &&
-      isValidName(obj.riderName)
-    ) {
-
-      return obj.riderName;
-
-    }
-
-
-    if (
-      typeof obj.rider === "string" &&
-      isValidName(obj.rider)
-    ) {
-
-      return obj.rider;
-
-    }
-
-
-    if (
-      typeof obj.fullName === "string" &&
-      isValidName(obj.fullName)
-    ) {
-
-      return obj.fullName;
-
-    }
-
-
-    const first =
-      obj.fname ||
-      obj.firstName ||
-      obj.givenName;
-
-
-    const last =
-      obj.lname ||
-      obj.lastName ||
-      obj.familyName;
-
-
-    if (
-      typeof first === "string" &&
-      typeof last === "string"
-    ) {
-
-      const combined =
-        `${first} ${last}`.trim();
-
-
-      if (
-        isValidName(
-          combined
-        )
-      ) {
-
-        return combined;
-
-      }
-
-    }
-
-
-    return null;
-
-  }
-
-
-  /* =====================================================
-     VALID NAME
-  ===================================================== */
-
-  function isValidName(
-    str
-  ) {
-
-    if (!str) return false;
-
-
-    const s =
-      str.trim();
-
-
-    if (
-      s.length < 3
-    ) {
-
-      return false;
-
-    }
-
-
-    const lower =
-      s.toLowerCase();
-
-
-    if (
-      lower.includes("bmx club") ||
-      lower.includes("official result") ||
-      lower.includes("round ") ||
-      lower.includes("class")
-    ) {
-
-      return false;
-
-    }
-
-
-    return true;
-
-  }
-
-
-  /* =====================================================
-     FORMAT NAME
-  ===================================================== */
-
-  function formatName(
-    str
-  ) {
-
-    return str
-      .trim()
-      .toLowerCase()
-      .replace(
-        /\b\w/g,
-        letter =>
-          letter.toUpperCase()
-      );
-
-  }
-
-
-  /* =====================================================
-     TIME PARSER
-  ===================================================== */
-
-  function parseToSeconds(
-    value
-  ) {
-
-    if (
-      typeof value === "number"
-    ) {
-
-      return value;
-
-    }
-
-
-    if (
-      typeof value !== "string"
-    ) {
-
-      return null;
-
-    }
-
-
-    const clean =
-      value.trim();
-
-
-    if (!clean) {
-
-      return null;
-
-    }
-
-
-    if (
-      clean.includes(":")
-    ) {
-
-      const parts =
-        clean.split(":");
-
-
-      if (
-        parts.length === 2
-      ) {
-
-        const minutes =
-          parseFloat(
-            parts[0]
-          );
-
-
-        const seconds =
-          parseFloat(
-            parts[1]
-          );
-
-
-        if (
-          !isNaN(minutes) &&
-          !isNaN(seconds)
-        ) {
-
-          return (
-            minutes * 60
-          ) + seconds;
-
-        }
-
-      }
-
-    }
-
-
-    const number =
-      parseFloat(
-        clean
-      );
-
-
-    return isNaN(number)
-      ? null
-      : number;
-
-  }
-
-
-  /* =====================================================
-     TIMING EXTRACTION
-  ===================================================== */
-
-  function extractTimingsBulletproof(
-    obj,
-    riderRecord
-  ) {
-
-    for (
-      const key in obj
-    ) {
-
-      if (
-        !obj.hasOwnProperty(key)
-      ) continue;
-
-
-      if (
-        key === "name" ||
-        key === "riderName" ||
-        key === "rider" ||
-        key === "fullName"
-      ) continue;
-
-
-      const keyLower =
-        key.toLowerCase();
-
-
-      let value =
-        parseToSeconds(
-          obj[key]
-        );
-
-
-      if (
-        value === null ||
-        value <= 0
-      ) continue;
-
-
-      if (
-        value >= 1000 &&
-        value < 120000
-      ) {
-
-        value =
-          value / 1000;
-
-      }
-
-
-      if (
-        value >= 1.2 &&
-        value <= 5
-      ) {
-
-        riderRecord.gates.push(
-          value
-        );
-
-      }
-
-
-      if (
-        value >= 26 &&
-        value <= 90 &&
-        (
-          keyLower.includes("laptime") ||
-          keyLower.includes("finishtime") ||
-          keyLower === "time" ||
-          keyLower === "finish" ||
-          keyLower === "lap" ||
-          keyLower === "t"
-        )
-      ) {
-
-        riderRecord.laps.push(
-          value
-        );
-
-      }
-
-    }
-
-  }
-
-
-  /* =====================================================
-     CALCULATE PBs
-  ===================================================== */
-
-  function calculateRiderPBs() {
-
-    const rider =
-      document
-        .getElementById(
-          "rider-select"
-        )
-        .value;
-
-
-    if (
-      !rider ||
-      !ridersMap[rider]
-    ) {
-
-      return;
-
-    }
-
-
-    const data =
-      ridersMap[rider];
-
-
-    const bestGate =
-      data.gates.length
-        ? Math.min(
-            ...data.gates
-          )
-        : null;
-
-
-    const bestLap =
-      data.laps.length
-        ? Math.min(
-            ...data.laps
-          )
-        : null;
-
-
-    document.getElementById(
-      "gate-pb"
-    ).textContent =
-      bestGate !== null
-        ? `${bestGate.toFixed(3)}s`
-        : "N/A";
-
-
-    document.getElementById(
-      "lap-pb"
-    ).textContent =
-      bestLap !== null
-        ? `${bestLap.toFixed(3)}s`
-        : "N/A";
-
-
-    document.getElementById(
-      "status"
-    ).textContent =
-      `Showing PBs for ${rider}`;
-
-  }
-
-</script>
-
-
-<!--
-  Keep your existing sqorz.js file.
-  We are not using it for the My SQORZ transponder search.
--->
-
-<script src="sqorz.js"></script>
-
-</body>
-</html>
+      for (const key in node) {
+        if (node.hasOwnProperty(key) && typeof node[key] === "object") {
+          deepScan
