@@ -9,7 +9,7 @@
     * { box-sizing: border-box; }
 
     body {
-      background: #000000;
+      background: #000;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 20px;
@@ -24,20 +24,19 @@
     }
 
     .container {
-      background: #111111;
+      background: #111;
       width: 100%;
       max-width: 500px;
       padding: 25px;
       border-radius: 20px;
       border: 2px solid #CCFF00;
-      box-shadow: 0 0 25px rgba(204, 255, 0, 0.2);
+      box-shadow: 0 0 25px rgba(204,255,0,0.2);
     }
 
     h1 {
       margin: 0;
       text-align: center;
       font-size: 30px;
-      letter-spacing: 1px;
       color: #CCFF00;
       text-transform: uppercase;
     }
@@ -45,18 +44,15 @@
     .subtitle {
       text-align: center;
       font-size: 13px;
-      color: #CCFF00;
       margin-top: 8px;
       margin-bottom: 5px;
-      line-height: 1.4;
     }
 
     .subtitle-small {
       text-align: center;
       font-size: 11px;
-      color: #CCFF00;
-      margin-bottom: 25px;
       opacity: 0.8;
+      margin-bottom: 25px;
     }
 
     .selector-group {
@@ -69,7 +65,6 @@
     label {
       font-size: 12px;
       font-weight: bold;
-      color: #CCFF00;
       text-transform: uppercase;
       margin-bottom: -6px;
     }
@@ -86,10 +81,6 @@
       width: 100%;
     }
 
-    select:focus {
-      box-shadow: 0 0 10px rgba(204, 255, 0, 0.5);
-    }
-
     .cards-container {
       display: flex;
       flex-direction: column;
@@ -99,7 +90,7 @@
 
     .card {
       background: #1a1a1a;
-      border: 1px solid #333333;
+      border: 1px solid #333;
       padding: 20px;
       border-radius: 12px;
       display: flex;
@@ -109,7 +100,6 @@
 
     .card-title {
       font-size: 14px;
-      color: #CCFF00;
       text-transform: uppercase;
       font-weight: 600;
     }
@@ -117,15 +107,12 @@
     .card-value {
       font-size: 26px;
       font-weight: bold;
-      color: #CCFF00;
     }
 
     #status {
       font-size: 12px;
-      color: #CCFF00;
       margin-top: 15px;
       font-weight: bold;
-      line-height: 1.4;
       text-align: center;
     }
   </style>
@@ -188,7 +175,7 @@
 
 <script>
 /* =====================================================
-   CONFIG — CLUBS
+   CLUBS
 ===================================================== */
 
 const CLUBS = {
@@ -200,7 +187,7 @@ const CLUBS = {
 };
 
 /* =====================================================
-   LOAD RIDERS WHEN CLUB IS SELECTED
+   LOAD RIDERS (NEW WORKING METHOD)
 ===================================================== */
 
 document.getElementById("track-select").addEventListener("change", async () => {
@@ -208,52 +195,76 @@ document.getElementById("track-select").addEventListener("change", async () => {
   const riderSelect = document.getElementById("rider-select");
   const statusEl = document.getElementById("status");
 
-  document.getElementById("gate-pb").textContent = "--";
-  document.getElementById("lap-pb").textContent = "--";
+  riderSelect.innerHTML = '<option>Loading...</option>';
+  statusEl.textContent = "Loading riders...";
 
   if (!clubCode) {
-    riderSelect.innerHTML = '<option value="">-- Select a Club First --</option>';
+    riderSelect.innerHTML = '<option>-- Select a Club First --</option>';
     statusEl.textContent = "Select a club above to load riders...";
     return;
   }
 
-  statusEl.textContent = `Loading riders from ${CLUBS[clubCode]}...`;
-  riderSelect.innerHTML = '<option value="">Loading...</option>';
-
   try {
-    const res = await fetch(`https://sqorz.com/api/club/${clubCode}/riders`);
+    const res = await fetch(`https://our.sqorz.com/json/org/${clubCode}`);
     const data = await res.json();
+
+    const riders = new Set();
+
+    function scan(node) {
+      if (!node) return;
+
+      if (Array.isArray(node)) {
+        node.forEach(scan);
+        return;
+      }
+
+      if (typeof node === "object") {
+        if (node.name && typeof node.name === "string") {
+          if (node.name.length > 3 && !node.name.includes("BMX")) {
+            riders.add(node.name);
+          }
+        }
+
+        for (const key in node) {
+          if (typeof node[key] === "object") scan(node[key]);
+        }
+      }
+    }
+
+    scan(data);
+
+    const sorted = [...riders].sort();
 
     riderSelect.innerHTML = '<option value="">-- Select a Rider --</option>';
 
-    data.riders.forEach(rider => {
+    sorted.forEach(name => {
       const opt = document.createElement("option");
-      opt.value = rider.id;
-      opt.textContent = rider.name;
+      opt.value = name;
+      opt.textContent = name;
       riderSelect.appendChild(opt);
     });
 
-    statusEl.textContent = `Loaded ${data.riders.length} riders.`;
+    statusEl.textContent = `Loaded ${sorted.length} riders.`;
 
   } catch (err) {
     console.error(err);
-    statusEl.textContent = "Could not load riders for this club.";
-    riderSelect.innerHTML = '<option value="">Error Loading Riders</option>';
+    statusEl.textContent = "Error loading riders.";
+    riderSelect.innerHTML = '<option>Error Loading Riders</option>';
   }
 });
 
 /* =====================================================
-   LOAD PBs WHEN RIDER IS SELECTED
+   LOAD PBs
 ===================================================== */
 
 document.getElementById("rider-select").addEventListener("change", async () => {
-  const riderId = document.getElementById("rider-select").value;
+  const riderName = document.getElementById("rider-select").value;
   const statusEl = document.getElementById("status");
 
   document.getElementById("gate-pb").textContent = "--";
   document.getElementById("lap-pb").textContent = "--";
 
-  if (!riderId) {
+  if (!riderName) {
     statusEl.textContent = "Select a rider to view PBs.";
     return;
   }
@@ -261,7 +272,7 @@ document.getElementById("rider-select").addEventListener("change", async () => {
   statusEl.textContent = "Loading PBs...";
 
   try {
-    const res = await fetch(`https://sqorz.com/api/rider/${riderId}/pbs`);
+    const res = await fetch(`https://sqorz.com/api/rider/name/${encodeURIComponent(riderName)}/pbs`);
     const data = await res.json();
 
     document.getElementById("gate-pb").textContent = data.gate_pb ?? "--";
@@ -271,7 +282,7 @@ document.getElementById("rider-select").addEventListener("change", async () => {
 
   } catch (err) {
     console.error(err);
-    statusEl.textContent = "Could not load PBs for this rider.";
+    statusEl.textContent = "Could not load PBs.";
   }
 });
 </script>
