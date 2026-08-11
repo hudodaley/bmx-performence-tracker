@@ -11,7 +11,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 20px;
-      color: #CCFF00; /* Neon Yellow Text everywhere */
+      color: #CCFF00;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -41,7 +41,7 @@
 
     .subtitle {
       font-size: 13px;
-      color: #CCFF00; /* Changed from blue/white to Neon Yellow */
+      color: #CCFF00;
       margin-bottom: 25px;
       line-height: 1.4;
     }
@@ -65,8 +65,8 @@
 
     select {
       background-color: #1a1a1a;
-      color: #CCFF00; /* Changed selector text to Neon Yellow */
-      border: 2px solid #CCFF00; /* Changed border to Neon Yellow */
+      color: #CCFF00;
+      border: 2px solid #CCFF00;
       padding: 12px 15px;
       border-radius: 10px;
       font-size: 15px;
@@ -132,11 +132,11 @@
         <option value="rockhampton">Rockhampton BMX</option>
         <option value="harbourcity">Harbour City BMX</option>
         <option value="cairns">Cairns BMX</option>
-        </select>
+      </select>
 
       <label for="rider-select">Select Rider:</label>
       <select id="rider-select" onchange="calculateRiderPBs()">
-        <option value="">-- Loading Riders --</option>
+        <option value="">-- Select a Club First --</option>
       </select>
     </div>
 
@@ -152,15 +152,35 @@
       </div>
     </div>
 
-    <div id="status">Select a club to load riders...</div>
+    <div id="status">Loading data...</div>
   </div>
 
   <script>
     const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev";
-    
-    // Store club data in memory
-    let clubEventsData = [];
-    let ridersMap = {}; // Maps Rider Name -> Array of recorded times
+
+    // --- ADD YOUR SQORZ EVENT IDs HERE FOR EACH CLUB ---
+    const CLUBS_DATA = {
+      "rockhampton": {
+        name: "Rockhampton BMX",
+        events: [
+          "6a06bedb106401f621fe2662"
+        ]
+      },
+      "harbourcity": {
+        name: "Harbour City BMX",
+        events: [
+          // "EVENT_ID_HERE"
+        ]
+      },
+      "cairns": {
+        name: "Cairns BMX",
+        events: [
+          // "EVENT_ID_HERE"
+        ]
+      }
+    };
+
+    let ridersMap = {}; // Maps Rider Name -> { gates: [], laps: [] }
 
     async function loadClubData() {
       const statusEl = document.getElementById("status");
@@ -170,27 +190,33 @@
       riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
       document.getElementById("gate-pb").textContent = "--";
       document.getElementById("lap-pb").textContent = "--";
-      statusEl.textContent = `Fetching club data for ${clubCode}...`;
+
+      const clubInfo = CLUBS_DATA[clubCode];
+      if (!clubInfo || !clubInfo.events || clubInfo.events.length === 0) {
+        statusEl.textContent = `No event IDs added for ${clubCode} yet.`;
+        riderSelect.innerHTML = '<option value="">-- No Events Listed --</option>';
+        return;
+      }
+
+      statusEl.textContent = `Loading ${clubInfo.events.length} event(s) for ${clubInfo.name}...`;
+      ridersMap = {};
 
       try {
-        // Fetch organization / club endpoint from Sqorz
-        const orgUrl = `https://our.sqorz.com/api/v1/org/${clubCode}.json`;
-        const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(orgUrl)}`);
-        
-        if (!response.ok) throw new Error("Could not load club data");
+        // Fetch data for every event ID listed in the club
+        for (let eventId of clubInfo.events) {
+          const targetUrl = `https://our.sqorz.com/api/v1/event/${eventId}.json`;
+          const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`);
+          if (response.ok) {
+            const eventData = await response.json();
+            scanObjectForRiders(eventData);
+          }
+        }
 
-        const orgData = await response.json();
-        ridersMap = {}; // Clear previous riders
-
-        // Scan organization object for all riders and times
-        scanObjectForRiders(orgData);
-
-        // Populate the Rider Dropdown
         const sortedRiders = Object.keys(ridersMap).sort();
-        
+
         if (sortedRiders.length === 0) {
           riderSelect.innerHTML = '<option value="">No Riders Found</option>';
-          statusEl.textContent = "No rider data found in this club file.";
+          statusEl.textContent = "No timing records found in these events.";
           return;
         }
 
@@ -202,22 +228,21 @@
           riderSelect.appendChild(opt);
         });
 
-        // Pre-select Hudson Daley if present
+        // Pre-select Hudson Daley if found
         const hudsonMatch = sortedRiders.find(r => r.toLowerCase().includes("hudson") && r.toLowerCase().includes("daley"));
         if (hudsonMatch) {
           riderSelect.value = hudsonMatch;
           calculateRiderPBs();
         }
 
-        statusEl.textContent = `Loaded ${sortedRiders.length} riders from ${clubCode}!`;
+        statusEl.textContent = `Loaded ${sortedRiders.length} riders across ${clubInfo.events.length} event(s)!`;
 
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Error loading club data. Try another club.";
+        statusEl.textContent = "Error loading event data.";
       }
     }
 
-    // Helper to extract all riders and their timing data
     function scanObjectForRiders(obj) {
       if (!obj || typeof obj !== 'object') return;
 
@@ -232,13 +257,13 @@
           ridersMap[cleanName] = { gates: [], laps: [] };
         }
 
-        // Gate times
+        // Gate times (1s to 15s)
         [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1].forEach(val => {
           const num = parseFloat(val);
           if (!isNaN(num) && num > 0 && num < 15) ridersMap[cleanName].gates.push(num);
         });
 
-        // Lap times
+        // Full Lap times (> 15s)
         [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish].forEach(val => {
           const num = parseFloat(val);
           if (!isNaN(num) && num >= 15) ridersMap[cleanName].laps.push(num);
@@ -250,7 +275,6 @@
       }
     }
 
-    // Calculate PBs for selected rider
     function calculateRiderPBs() {
       const selectedRider = document.getElementById("rider-select").value;
       if (!selectedRider || !ridersMap[selectedRider]) return;
