@@ -168,15 +168,11 @@
       },
       "harbourcity": {
         name: "Harbour City BMX",
-        events: [
-          // "EVENT_ID_HERE"
-        ]
+        events: []
       },
       "cairns": {
         name: "Cairns BMX",
-        events: [
-          // "EVENT_ID_HERE"
-        ]
+        events: []
       }
     };
 
@@ -202,9 +198,11 @@
       ridersMap = {};
 
       try {
-        // Fetch data for every event ID listed in the club
         for (let eventId of clubInfo.events) {
-          const targetUrl = `https://our.sqorz.com/api/v1/event/${eventId}.json`;
+          // Format raw IDs if full URL was pasted by accident
+          const cleanEventId = eventId.replace("https://our.sqorz.com/api/v1/event/", "").replace(".json", "").trim();
+          const targetUrl = `https://our.sqorz.com/api/v1/event/${cleanEventId}.json`;
+          
           const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`);
           if (response.ok) {
             const eventData = await response.json();
@@ -243,28 +241,46 @@
       }
     }
 
+    function extractName(obj) {
+      if (!obj || typeof obj !== 'object') return null;
+
+      // Check standard fields
+      if (typeof obj.name === 'string' && obj.name.trim().length > 2) return obj.name.trim();
+      if (typeof obj.riderName === 'string' && obj.riderName.trim().length > 2) return obj.riderName.trim();
+      if (typeof obj.rider === 'string' && obj.rider.trim().length > 2) return obj.rider.trim();
+      if (typeof obj.fullName === 'string' && obj.fullName.trim().length > 2) return obj.fullName.trim();
+
+      // Check split first / last name fields
+      const fname = obj.fname || obj.firstName || obj.givenName;
+      const lname = obj.lname || obj.lastName || obj.familyName;
+      if (fname && lname && typeof fname === 'string' && typeof lname === 'string') {
+        return `${fname.trim()} ${lname.trim()}`;
+      }
+
+      return null;
+    }
+
     function scanObjectForRiders(obj) {
       if (!obj || typeof obj !== 'object') return;
 
-      const name = [
-        obj.name, obj.riderName, obj.rider,
-        (obj.fname && obj.lname) ? `${obj.fname} ${obj.lname}` : null
-      ].filter(Boolean)[0];
+      const name = extractName(obj);
 
-      if (name && typeof name === 'string' && name.trim().length > 2) {
-        const cleanName = name.trim();
+      if (name) {
+        // Standardize name title casing
+        const cleanName = name.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+
         if (!ridersMap[cleanName]) {
           ridersMap[cleanName] = { gates: [], laps: [] };
         }
 
-        // Gate times (1s to 15s)
-        [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1].forEach(val => {
+        // Gate times (typically 1.0s to 15.0s)
+        [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1, obj.g].forEach(val => {
           const num = parseFloat(val);
           if (!isNaN(num) && num > 0 && num < 15) ridersMap[cleanName].gates.push(num);
         });
 
-        // Full Lap times (> 15s)
-        [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish].forEach(val => {
+        // Full Lap times (typically >= 15.0s)
+        [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish, obj.t].forEach(val => {
           const num = parseFloat(val);
           if (!isNaN(num) && num >= 15) ridersMap[cleanName].laps.push(num);
         });
