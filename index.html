@@ -1,181 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Your BMX PB's</title>
 
   <style>
     * { box-sizing: border-box; }
-
     body {
       background: #000;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #CCFF00;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 20px;
-      color: #CCFF00;
       min-height: 100vh;
     }
 
-    .page-wrapper {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-
+    .page-wrapper { display:flex; justify-content:center; }
     .container {
-      background: #111;
-      width: 100%;
-      max-width: 500px;
-      padding: 25px;
-      border-radius: 20px;
-      border: 2px solid #CCFF00;
-      box-shadow: 0 0 25px rgba(204,255,0,0.2);
+      width:100%; max-width:900px;
+      background:#111; border:2px solid #CCFF00;
+      border-radius:14px; padding:22px;
+      box-shadow:0 0 30px rgba(204,255,0,0.08);
     }
 
-    h1 {
-      margin: 0;
-      text-align: center;
-      font-size: 30px;
-      color: #CCFF00;
-      text-transform: uppercase;
-    }
+    h1 { margin:0; text-align:center; font-size:30px; text-transform:uppercase; color:#CCFF00; }
+    .subtitle { text-align:center; font-size:13px; margin-top:8px; margin-bottom:5px; }
+    .subtitle-small { text-align:center; font-size:11px; opacity:0.9; margin-bottom:18px; }
 
-    .subtitle {
-      text-align: center;
-      font-size: 13px;
-      margin-top: 8px;
-      margin-bottom: 5px;
+    .controls {
+      display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px;
     }
+    .controls > * { flex:1 1 220px; min-width:180px; }
 
-    .subtitle-small {
-      text-align: center;
-      font-size: 11px;
-      opacity: 0.8;
-      margin-bottom: 25px;
+    label { display:block; font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px; color:#CCFF00; }
+    select, button {
+      width:100%; padding:10px 12px; border-radius:10px; border:2px solid #CCFF00;
+      background:#1a1a1a; color:#CCFF00; font-weight:700; font-size:14px;
     }
+    button { cursor:pointer; background:#CCFF00; color:#000; border:none; }
+    button:active { transform:scale(0.99); }
 
-    .selector-group {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 25px;
-    }
-
-    label {
-      font-size: 12px;
-      font-weight: bold;
-      text-transform: uppercase;
-      margin-bottom: -6px;
-    }
-
-    select {
-      background: #1a1a1a;
-      color: #CCFF00;
-      border: 2px solid #CCFF00;
-      padding: 12px 15px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: bold;
-      outline: none;
-      width: 100%;
-    }
-
-    .cards-container {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-top: 10px;
-    }
-
+    .cards { display:flex; gap:12px; margin-top:10px; flex-wrap:wrap; }
     .card {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      padding: 20px;
-      border-radius: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      background:#1a1a1a; border-radius:10px; padding:14px 18px; flex:1 1 200px;
+      display:flex; flex-direction:column; gap:6px; border:1px solid #333;
     }
+    .card-title { font-size:12px; text-transform:uppercase; color:#CCFF00; font-weight:700; }
+    .card-value { font-size:22px; font-weight:900; color:#CCFF00; }
 
-    .card-title {
-      font-size: 14px;
-      text-transform: uppercase;
-      font-weight: 600;
+    #status { margin-top:12px; text-align:center; font-weight:700; font-size:13px; color:#CCFF00; }
+
+    /* Spinner overlay */
+    .overlay {
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,0.6); z-index:9999;
     }
-
-    .card-value {
-      font-size: 26px;
-      font-weight: bold;
+    .overlay.show { display:flex; }
+    .spinner-box {
+      background:#0f0f0f; border:2px solid #CCFF00; padding:18px; border-radius:12px; text-align:center;
+      width:360px; max-width:90%;
     }
+    .spinner {
+      width:56px; height:56px; margin:0 auto 12px; border-radius:50%;
+      border:6px solid rgba(204,255,0,0.15); border-top-color:#CCFF00; animation:spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
 
-    #status {
-      font-size: 12px;
-      margin-top: 15px;
-      font-weight: bold;
-      text-align: center;
+    .progress-line {
+      height:8px; background:#222; border-radius:6px; overflow:hidden; margin-top:10px;
+    }
+    .progress-bar { height:100%; background:#CCFF00; width:0%; transition:width 200ms linear; }
+
+    /* Monthly PB table */
+    .pb-table {
+      margin-top:18px; width:100%; border-collapse:collapse; color:#CCFF00;
+    }
+    .pb-table th, .pb-table td {
+      padding:8px 10px; border-bottom:1px solid #222; text-align:center; font-weight:700;
+    }
+    .pb-table th { font-size:12px; text-transform:uppercase; }
+    .pb-note { margin-top:10px; font-size:12px; color:#bfbfbf; text-align:center; }
+
+    /* Responsive */
+    @media (max-width:640px) {
+      .cards { flex-direction:column; }
+      .controls { flex-direction:column; }
     }
   </style>
 </head>
-
 <body>
+  <div class="page-wrapper">
+    <div class="container">
+      <h1>Your BMX PB's</h1>
+      <div class="subtitle">Don't go searching for your PB's for hours — go to Your BMX PB's</div>
+      <div class="subtitle-small">( MAY TAKE A WHILE TO LOAD, LOTS OF DATA TO GO THROUGH! )</div>
 
-<div class="page-wrapper">
-  <div class="container">
-
-    <h1>Your BMX PB's</h1>
-
-    <div class="subtitle">
-      Don't go searching for your PB's for hours — go to Your BMX PB's
-    </div>
-
-    <div class="subtitle-small">
-      ( MAY TAKE A WHILE TO LOAD, LOTS OF DATA TO GO THROUGH! )
-    </div>
-
-    <div id="our-sqorz">
-
-      <div class="selector-group">
-
-        <label for="track-select">Select Club / Track</label>
-        <select id="track-select">
-          <option value="">-- Choose a Club --</option>
-          <option value="rockybmx">Rockhampton BMX</option>
-          <option value="hcbmx">Harbour City BMX</option>
-          <option value="cairnsbmx">Cairns BMX</option>
-          <option value="moranbah">Moranbah BMX Club</option>
-          <option value="bmxch">Central Highlands BMX Club</option>
-        </select>
-
-        <label for="rider-select">Select Rider</label>
-        <select id="rider-select">
-          <option value="">-- Select a Club First --</option>
-        </select>
-
-      </div>
-
-      <div class="cards-container">
-        <div class="card">
-          <div class="card-title">Gate PB</div>
-          <div class="card-value" id="gate-pb">--</div>
+      <div class="controls">
+        <div>
+          <label for="club">Select Club / Track</label>
+          <select id="club">
+            <option value="">-- Choose a Club --</option>
+            <option value="rockybmx">Rockhampton BMX</option>
+            <option value="hcbmx">Harbour City BMX</option>
+            <option value="cairnsbmx">Cairns BMX</option>
+            <option value="moranbah">Moranbah BMX Club</option>
+            <option value="bmxch">Central Highlands BMX Club</option>
+          </select>
         </div>
 
+        <div>
+          <label for="rider">Select Rider</label>
+          <select id="rider" disabled>
+            <option value="">-- Select a Club First --</option>
+          </select>
+        </div>
+
+        <div style="min-width:140px;">
+          <label>&nbsp;</label>
+          <button id="loadClubBtn">Load Club Riders</button>
+        </div>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <div class="card-title">Gate PB</div>
+          <div class="card-value" id="gatePB">--</div>
+        </div>
         <div class="card">
           <div class="card-title">Whole Lap PB</div>
-          <div class="card-value" id="lap-pb">--</div>
+          <div class="card-value" id="lapPB">--</div>
         </div>
       </div>
 
       <div id="status">Select a club above to load riders...</div>
 
-    </div>
+      <div id="monthlySection" style="display:none;">
+        <table class="pb-table" id="monthlyTable">
+          <thead>
+            <tr><th>Month</th><th>Best Gate PB</th><th>Best Lap PB</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pb-note">Monthly PBs start from March 2026. Months with no data show "—".</div>
+      </div>
 
+    </div>
   </div>
-</div>
+
+  <!-- Spinner / progress overlay -->
+  <div class="overlay" id="overlay">
+    <div class="spinner-box">
+      <div class="spinner" aria-hidden="true"></div>
+      <div id="overlayText" style="font-weight:800; color:#CCFF00;">Preparing...</div>
+      <div class="progress-line" style="margin-top:12px;">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div id="overlaySub" style="margin-top:8px; font-size:12px; color:#bfbfbf;"></div>
+    </div>
+  </div>
 
 <script>
 /* =====================================================
-   CLUBS
+   Full deep-scan implementation (long but robust)
+   - Scans org JSON for event IDs
+   - Fetches each event JSON
+   - Extracts rider names and timings
+   - Builds per-rider records with date, gate, lap
+   - Renders rider list and monthly PB table
+   - Includes spinner + progress
+   - NOTE: If you hit CORS, set PROXY_URL to a working proxy
 ===================================================== */
 
 const CLUBS = {
@@ -186,106 +180,387 @@ const CLUBS = {
   bmxch: "Central Highlands BMX Club"
 };
 
-/* =====================================================
-   LOAD RIDERS (NEW WORKING METHOD)
-===================================================== */
+// If you need a proxy (CORS), set PROXY_URL to your worker or proxy endpoint.
+// Example: const PROXY_URL = "https://your-proxy.example.com?url=";
+// Leave empty to fetch directly.
+const PROXY_URL = ""; // <-- set if required
 
-document.getElementById("track-select").addEventListener("change", async () => {
-  const clubCode = document.getElementById("track-select").value;
-  const riderSelect = document.getElementById("rider-select");
-  const statusEl = document.getElementById("status");
+const clubEl = document.getElementById("club");
+const riderEl = document.getElementById("rider");
+const loadClubBtn = document.getElementById("loadClubBtn");
+const statusEl = document.getElementById("status");
+const overlay = document.getElementById("overlay");
+const overlayText = document.getElementById("overlayText");
+const overlaySub = document.getElementById("overlaySub");
+const progressBar = document.getElementById("progressBar");
+const gatePBEl = document.getElementById("gatePB");
+const lapPBEl = document.getElementById("lapPB");
+const monthlySection = document.getElementById("monthlySection");
+const monthlyTableBody = document.querySelector("#monthlyTable tbody");
 
-  riderSelect.innerHTML = '<option>Loading...</option>';
-  statusEl.textContent = "Loading riders...";
+let ridersData = {}; // { "Rider Name": [ {date: Date, gate: number|null, lap: number|null}, ... ] }
 
-  if (!clubCode) {
-    riderSelect.innerHTML = '<option>-- Select a Club First --</option>';
-    statusEl.textContent = "Select a club above to load riders...";
-    return;
+/* -------------------------
+   Utility: fetch with optional proxy
+--------------------------*/
+async function fetchJson(pathOrUrl) {
+  // If pathOrUrl starts with '/', treat as our.sqorz.com path
+  let url = pathOrUrl;
+  if (pathOrUrl.startsWith("/")) {
+    url = `https://our.sqorz.com${pathOrUrl}`;
   }
+  // If PROXY_URL set, use it
+  if (PROXY_URL && PROXY_URL.length) {
+    const proxied = PROXY_URL + encodeURIComponent(url);
+    const res = await fetch(proxied);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  } else {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+}
 
-  try {
-    const res = await fetch(`https://our.sqorz.com/json/org/${clubCode}`);
-    const data = await res.json();
+/* -------------------------
+   Helpers: scanning JSON for event IDs and riders
+--------------------------*/
+function collectEventIdsFromOrgJson(obj) {
+  const ids = new Set();
+  const pattern = /^[a-f0-9]{24}$/i;
 
-    const riders = new Set();
-
-    function scan(node) {
-      if (!node) return;
-
-      if (Array.isArray(node)) {
-        node.forEach(scan);
-        return;
-      }
-
-      if (typeof node === "object") {
-        if (node.name && typeof node.name === "string") {
-          if (node.name.length > 3 && !node.name.includes("BMX")) {
-            riders.add(node.name);
-          }
-        }
-
-        for (const key in node) {
-          if (typeof node[key] === "object") scan(node[key]);
+  function scan(node) {
+    if (!node) return;
+    if (Array.isArray(node)) {
+      node.forEach(scan);
+      return;
+    }
+    if (typeof node === "object") {
+      for (const k of Object.keys(node)) {
+        const v = node[k];
+        if (typeof v === "string") {
+          const s = v.trim();
+          if (pattern.test(s)) ids.add(s);
+        } else if (typeof v === "object") {
+          scan(v);
         }
       }
     }
-
-    scan(data);
-
-    const sorted = [...riders].sort();
-
-    riderSelect.innerHTML = '<option value="">-- Select a Rider --</option>';
-
-    sorted.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      riderSelect.appendChild(opt);
-    });
-
-    statusEl.textContent = `Loaded ${sorted.length} riders.`;
-
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = "Error loading riders.";
-    riderSelect.innerHTML = '<option>Error Loading Riders</option>';
   }
-});
+  scan(obj);
+  return Array.from(ids);
+}
 
-/* =====================================================
-   LOAD PBs
-===================================================== */
+function extractRiderNameFromNode(node) {
+  if (!node || typeof node !== "object") return null;
+  const candidates = ["name","riderName","rider","fullName","firstName","lastName","fname","lname"];
+  for (const key of candidates) {
+    if (node[key] && typeof node[key] === "string") {
+      const s = node[key].trim();
+      if (s.length > 1 && !/^\d+$/.test(s)) return s;
+    }
+  }
+  // try combining first/last
+  const first = node.firstName || node.fname || node.givenName;
+  const last = node.lastName || node.lname || node.familyName;
+  if (first && last && typeof first === "string" && typeof last === "string") {
+    const combined = `${first} ${last}`.trim();
+    if (combined.length > 1) return combined;
+  }
+  return null;
+}
 
-document.getElementById("rider-select").addEventListener("change", async () => {
-  const riderName = document.getElementById("rider-select").value;
-  const statusEl = document.getElementById("status");
+function parseToSeconds(value) {
+  if (value == null) return null;
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return null;
+  const s = value.trim();
+  if (!s) return null;
+  // mm:ss.sss or m:ss
+  if (s.includes(":")) {
+    const parts = s.split(":").map(p => p.trim());
+    if (parts.length === 2) {
+      const mins = parseFloat(parts[0]);
+      const secs = parseFloat(parts[1]);
+      if (!isNaN(mins) && !isNaN(secs)) return mins * 60 + secs;
+    }
+  }
+  // plain number maybe milliseconds
+  const num = parseFloat(s.replace(/[^\d.\-]/g,""));
+  if (isNaN(num)) return null;
+  // if looks like milliseconds (>=1000) convert
+  if (num >= 1000 && num < 120000) return num / 1000;
+  return num;
+}
 
-  document.getElementById("gate-pb").textContent = "--";
-  document.getElementById("lap-pb").textContent = "--";
+function extractTimingsFromNode(node) {
+  // returns { gate: bestGateOrNull, lap: bestLapOrNull } from this node
+  let gates = [];
+  let laps = [];
+  if (!node || typeof node !== "object") return { gates, laps };
 
-  if (!riderName) {
-    statusEl.textContent = "Select a rider to view PBs.";
+  for (const key of Object.keys(node)) {
+    const val = node[key];
+    const keyLower = key.toLowerCase();
+    // skip name fields
+    if (["name","ridername","rider","fullname","firstname","lastname","fname","lname"].includes(keyLower)) continue;
+
+    // if nested object, try to parse numeric fields inside
+    if (typeof val === "object") {
+      const nested = extractTimingsFromNode(val);
+      gates.push(...nested.gates);
+      laps.push(...nested.laps);
+      continue;
+    }
+
+    const seconds = parseToSeconds(val);
+    if (seconds == null || seconds <= 0) continue;
+
+    // gate-like fields
+    if (keyLower.includes("gate") || keyLower.includes("split") || keyLower === "g" || keyLower === "s1") {
+      if (seconds >= 0.8 && seconds <= 6) gates.push(seconds);
+    }
+
+    // lap-like fields
+    if (keyLower.includes("laptime") || keyLower.includes("finishtime") || keyLower === "time" || keyLower === "finish" || keyLower === "lap" || keyLower === "t") {
+      if (seconds >= 10 && seconds <= 300) laps.push(seconds);
+    }
+  }
+
+  return { gates, laps };
+}
+
+/* -------------------------
+   Deep scan event JSON to collect rider records
+   - Walks entire event object, finds rider names and timings
+--------------------------*/
+function deepScanEventForRiders(eventJson, eventDate, ridersMap) {
+  function scan(node, currentName = null) {
+    if (!node) return;
+    if (Array.isArray(node)) {
+      node.forEach(item => scan(item, currentName));
+      return;
+    }
+    if (typeof node === "object") {
+      const foundName = extractRiderNameFromNode(node);
+      const activeName = foundName ? foundName : currentName;
+
+      // extract timings at this node
+      const { gates, laps } = extractTimingsFromNode(node);
+      if (activeName && (gates.length || laps.length)) {
+        if (!ridersMap[activeName]) ridersMap[activeName] = [];
+        // store each gate/lap as separate records (we'll compute bests later)
+        if (gates.length) {
+          gates.forEach(g => ridersMap[activeName].push({ date: eventDate, gate: g, lap: null }));
+        }
+        if (laps.length) {
+          laps.forEach(l => ridersMap[activeName].push({ date: eventDate, gate: null, lap: l }));
+        }
+      }
+
+      // continue scanning children
+      for (const k of Object.keys(node)) {
+        if (typeof node[k] === "object") scan(node[k], activeName);
+      }
+    }
+  }
+  scan(eventJson, null);
+}
+
+/* -------------------------
+   UI: show/hide overlay and progress
+--------------------------*/
+function showOverlay(text, sub) {
+  overlayText.textContent = text || "Working...";
+  overlaySub.textContent = sub || "";
+  progressBar.style.width = "0%";
+  overlay.classList.add("show");
+}
+function hideOverlay() {
+  overlay.classList.remove("show");
+  progressBar.style.width = "0%";
+}
+function setProgress(percent, sub) {
+  progressBar.style.width = `${percent}%`;
+  overlaySub.textContent = sub || "";
+}
+
+/* -------------------------
+   Main: load club (deep scan)
+--------------------------*/
+loadClubBtn.addEventListener("click", async () => {
+  const clubCode = clubEl.value;
+  riderEl.innerHTML = '<option>Loading...</option>';
+  riderEl.disabled = true;
+  gatePBEl.textContent = "--";
+  lapPBEl.textContent = "--";
+  monthlySection.style.display = "none";
+  monthlyTableBody.innerHTML = "";
+
+  if (!clubCode) {
+    statusEl.textContent = "Please select a club first.";
+    riderEl.innerHTML = '<option value="">-- Select a Club First --</option>';
     return;
   }
 
-  statusEl.textContent = "Loading PBs...";
+  statusEl.textContent = `Scanning ${CLUBS[clubCode]} data for events and riders...`;
+  showOverlay(`Scanning ${CLUBS[clubCode]}...`, "Fetching club JSON");
 
   try {
-    const res = await fetch(`https://sqorz.com/api/rider/name/${encodeURIComponent(riderName)}/pbs`);
-    const data = await res.json();
+    // 1) fetch org JSON
+    const orgJson = await fetchJson(`/json/org/${clubCode}`);
 
-    document.getElementById("gate-pb").textContent = data.gate_pb ?? "--";
-    document.getElementById("lap-pb").textContent = data.lap_pb ?? "--";
+    // 2) collect event IDs
+    const eventIds = collectEventIdsFromOrgJson(orgJson);
+    if (!eventIds.length) {
+      hideOverlay();
+      statusEl.textContent = `No events found for ${CLUBS[clubCode]}.`;
+      riderEl.innerHTML = '<option value="">No Riders Found</option>';
+      return;
+    }
 
-    statusEl.textContent = "PBs loaded successfully.";
+    // Prepare riders map
+    ridersData = {};
+
+    // 3) iterate events and fetch each event JSON
+    const total = eventIds.length;
+    let processed = 0;
+
+    // We'll fetch sequentially to avoid hammering the server; you can parallelize if desired.
+    for (const eventId of eventIds) {
+      try {
+        setProgress(Math.round((processed / total) * 100), `Loading event ${processed + 1} of ${total}`);
+        const eventJson = await fetchJson(`/json/event/${eventId}`);
+        // determine event date
+        const dateStr = eventJson.startDate || eventJson.date || eventJson.created || null;
+        const eventDate = dateStr ? new Date(dateStr) : new Date();
+        deepScanEventForRiders(eventJson, eventDate, ridersData);
+      } catch (e) {
+        // ignore single event errors but log
+        console.warn("Event fetch/scan error", eventId, e);
+      }
+      processed++;
+      setProgress(Math.round((processed / total) * 100), `Processed ${processed} / ${total} events`);
+      // small delay to be polite (optional)
+      await new Promise(r => setTimeout(r, 60));
+    }
+
+    setProgress(100, "Finalizing rider list...");
+    // Build sorted rider list
+    const riderNames = Object.keys(ridersData).sort((a,b) => a.localeCompare(b, undefined, {sensitivity:'base'}));
+
+    if (!riderNames.length) {
+      hideOverlay();
+      statusEl.textContent = `No riders found in events for ${CLUBS[clubCode]}.`;
+      riderEl.innerHTML = '<option value="">No Riders Found</option>';
+      return;
+    }
+
+    // populate dropdown
+    riderEl.innerHTML = '<option value="">-- Select a Rider --</option>';
+    for (const name of riderNames) {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      riderEl.appendChild(opt);
+    }
+    riderEl.disabled = false;
+    statusEl.textContent = `Loaded ${riderNames.length} riders from ${eventIds.length} events.`;
+    hideOverlay();
 
   } catch (err) {
     console.error(err);
-    statusEl.textContent = "Could not load PBs.";
+    hideOverlay();
+    statusEl.textContent = "Error loading riders. If you see CORS errors in the console, set PROXY_URL to a working proxy.";
+    riderEl.innerHTML = '<option value="">Error Loading Riders</option>';
   }
 });
-</script>
 
+/* -------------------------
+   Compute PBs and monthly table for selected rider
+--------------------------*/
+riderEl.addEventListener("change", () => {
+  const name = riderEl.value;
+  gatePBEl.textContent = "--";
+  lapPBEl.textContent = "--";
+  monthlySection.style.display = "none";
+  monthlyTableBody.innerHTML = "";
+
+  if (!name) {
+    statusEl.textContent = "Select a rider to view PBs.";
+    return;
+  }
+  statusEl.textContent = `Calculating PBs for ${name}...`;
+
+  const records = ridersData[name] || [];
+  if (!records.length) {
+    statusEl.textContent = `No timing records found for ${name}.`;
+    return;
+  }
+
+  // overall bests
+  const gates = records.filter(r => r.gate != null).map(r => r.gate);
+  const laps = records.filter(r => r.lap != null).map(r => r.lap);
+  const bestGate = gates.length ? Math.min(...gates) : null;
+  const bestLap = laps.length ? Math.min(...laps) : null;
+  gatePBEl.textContent = bestGate !== null ? `${bestGate.toFixed(3)}s` : "N/A";
+  lapPBEl.textContent = bestLap !== null ? `${bestLap.toFixed(3)}s` : "N/A";
+
+  // monthly PBs starting March 2026 up to current month
+  const start = new Date("2026-03-01T00:00:00Z");
+  const now = new Date();
+  const months = [];
+  const m = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (m <= now) {
+    months.push(new Date(m.getTime()));
+    m.setMonth(m.getMonth() + 1);
+  }
+
+  // build month buckets
+  const monthBuckets = months.map(d => {
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    return { key, label: d.toLocaleString(undefined, { month: "short", year: "numeric" }), gates: [], laps: [] };
+  });
+
+  for (const rec of records) {
+    if (!rec.date) continue;
+    const dt = new Date(rec.date);
+    // find bucket
+    const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;
+    const bucket = monthBuckets.find(b => b.key === key);
+    if (!bucket) continue;
+    if (rec.gate != null) bucket.gates.push(rec.gate);
+    if (rec.lap != null) bucket.laps.push(rec.lap);
+  }
+
+  // render table
+  monthlyTableBody.innerHTML = "";
+  for (const b of monthBuckets) {
+    const bestG = b.gates.length ? Math.min(...b.gates) : null;
+    const bestL = b.laps.length ? Math.min(...b.laps) : null;
+    const tr = document.createElement("tr");
+    const tdMonth = document.createElement("td");
+    tdMonth.textContent = b.label;
+    const tdGate = document.createElement("td");
+    tdGate.textContent = bestG !== null ? `${bestG.toFixed(3)}s` : "—";
+    const tdLap = document.createElement("td");
+    tdLap.textContent = bestL !== null ? `${bestL.toFixed(3)}s` : "—";
+    tr.appendChild(tdMonth);
+    tr.appendChild(tdGate);
+    tr.appendChild(tdLap);
+    monthlyTableBody.appendChild(tr);
+  }
+
+  monthlySection.style.display = "block";
+  statusEl.textContent = `Showing PBs for ${name}.`;
+});
+
+/* -------------------------
+   Optional: keyboard enter to load club
+--------------------------*/
+clubEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") loadClubBtn.click();
+});
+</script>
 </body>
 </html>
