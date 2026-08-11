@@ -208,8 +208,6 @@
       ridersMap = {};
 
       try {
-        let successCount = 0;
-
         if (clubInfo && clubInfo.events && clubInfo.events.length > 0) {
           for (let eventId of clubInfo.events) {
             const cleanId = eventId.replace(/[^a-zA-Z0-9]/g, "").trim();
@@ -218,7 +216,6 @@
             try {
               const eventData = await fetchSqorzJson(`/json/event/${cleanId}`);
               deepScanForRiders(eventData);
-              successCount++;
             } catch (e) {
               console.warn(`Could not fetch event ${cleanId}`, e);
             }
@@ -330,7 +327,6 @@
       return isNaN(num) ? null : num;
     }
 
-    // Strictly extract timing data based on known Sqorz timing keys
     function extractTimingsStrict(obj, riderRecord) {
       for (let key in obj) {
         if (!obj.hasOwnProperty(key)) continue;
@@ -340,21 +336,24 @@
 
         if (val === null || val <= 0) continue;
 
-        // Convert ms to seconds
+        // Convert ms to seconds if needed
         if (val >= 1000 && val < 120000) {
           val = val / 1000;
         }
 
-        // --- GATE TIMINGS (1.2s - 5.0s) ---
+        // Ignore whole integers like 1.0, 22.0, 26.0 (placeholder points/positions in Sqorz JSON)
+        if (Number.isInteger(val)) continue;
+
+        // --- GATE TIMINGS (1.200s to 5.000s) ---
         if (k.includes("gate") || k.includes("split") || k === "s1" || k === "g1" || k.includes("split1")) {
-          if (val >= 1.2 && val <= 5.0) {
+          if (val > 1.2 && val < 5.0) {
             riderRecord.gates.push(val);
           }
         }
 
-        // --- LAP TIMINGS (26.0s - 90.0s) ---
+        // --- LAP TIMINGS (26.000s to 90.000s) ---
         if (k.includes("laptime") || k.includes("finishtime") || k === "time" || k === "finish" || k === "lap" || k === "t") {
-          if (val >= 26.0 && val <= 90.0) {
+          if (val > 26.0 && val < 90.0) {
             riderRecord.laps.push(val);
           }
         }
