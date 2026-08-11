@@ -264,7 +264,7 @@
           if (!ridersMap[activeRider]) {
             ridersMap[activeRider] = { gates: [], laps: [] };
           }
-          extractTimingsStrict(node, ridersMap[activeRider]);
+          extractTimingsSmart(node, ridersMap[activeRider]);
         }
 
         for (let key in node) {
@@ -327,7 +327,7 @@
       return isNaN(num) ? null : num;
     }
 
-    function extractTimingsStrict(obj, riderRecord) {
+    function extractTimingsSmart(obj, riderRecord) {
       for (let key in obj) {
         if (!obj.hasOwnProperty(key)) continue;
 
@@ -336,24 +336,23 @@
 
         if (val === null || val <= 0) continue;
 
-        // Convert ms to seconds if needed
+        // Convert ms to seconds
         if (val >= 1000 && val < 120000) {
           val = val / 1000;
         }
 
-        // Ignore whole integers like 1.0, 22.0, 26.0 (placeholder points/positions in Sqorz JSON)
-        if (Number.isInteger(val)) continue;
-
-        // --- GATE TIMINGS (1.200s to 5.000s) ---
-        if (k.includes("gate") || k.includes("split") || k === "s1" || k === "g1" || k.includes("split1")) {
-          if (val > 1.2 && val < 5.0) {
+        // --- GATE SPLITS (1.000s to 6.000s) ---
+        // Exclude exact 1.0 (placeholder) but catch all real decimals like 1.480s
+        if (val > 1.001 && val <= 6.000) {
+          // If the key explicitly mentions gate, split, s1, sector, or pos split
+          if (k.includes("gate") || k.includes("split") || k.includes("s1") || k.includes("sector") || k === "g" || k === "s_1") {
             riderRecord.gates.push(val);
           }
         }
 
-        // --- LAP TIMINGS (26.000s to 90.000s) ---
-        if (k.includes("laptime") || k.includes("finishtime") || k === "time" || k === "finish" || k === "lap" || k === "t") {
-          if (val > 26.0 && val < 90.0) {
+        // --- WHOLE LAP (26.000s to 90.000s) ---
+        if (val >= 26.000 && val <= 90.000) {
+          if (k.includes("laptime") || k.includes("finishtime") || k === "time" || k === "finish" || k === "lap" || k === "t") {
             riderRecord.laps.push(val);
           }
         }
