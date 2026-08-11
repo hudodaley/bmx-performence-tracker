@@ -159,7 +159,7 @@
   <script>
     const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev";
 
-    // --- CLUBS DATA WITH COMMAS PROPERLY ADDED ---
+    // --- CLUBS & EVENT IDs ---
     const CLUBS_DATA = {
       "rockhampton": {
         name: "Rockhampton BMX",
@@ -210,7 +210,6 @@
         let successCount = 0;
 
         for (let eventId of clubInfo.events) {
-          // Clean ID in case user pasted full URLs or extra spaces
           const cleanId = eventId.replace(/[^a-zA-Z0-9]/g, "").trim();
           if (!cleanId) continue;
 
@@ -220,11 +219,11 @@
             const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`);
             if (response.ok) {
               const eventData = await response.json();
-              scanObjectForRiders(eventData);
+              deepScanForRiders(eventData);
               successCount++;
             }
           } catch (e) {
-            console.warn(`Could not load event ${cleanId}`, e);
+            console.warn(`Could not fetch event ${cleanId}`, e);
           }
         }
 
@@ -244,67 +243,104 @@
           riderSelect.appendChild(opt);
         });
 
-        // Pre-select Hudson Daley automatically if in the event list
+        // Pre-select Hudson Daley if found
         const hudsonMatch = sortedRiders.find(r => r.toLowerCase().includes("hudson") && r.toLowerCase().includes("daley"));
         if (hudsonMatch) {
           riderSelect.value = hudsonMatch;
           calculateRiderPBs();
         }
 
-        statusEl.textContent = `Successfully loaded ${sortedRiders.length} riders from ${successCount} event(s)!`;
+        statusEl.textContent = `Loaded ${sortedRiders.length} riders from ${successCount} event(s)!`;
 
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Error fetching Sqorz data. Check network or proxy worker.";
+        statusEl.textContent = "Error fetching Sqorz data.";
       }
     }
 
-    function extractName(obj) {
-      if (!obj || typeof obj !== 'object') return null;
+    // Advanced Deep Object/Array Scanner
+    function deepScanForRiders(node) {
+      if (!node) return;
 
-      if (typeof obj.name === 'string' && obj.name.trim().length > 2) return obj.name.trim();
-      if (typeof obj.riderName === 'string' && obj.riderName.trim().length > 2) return obj.riderName.trim();
-      if (typeof obj.rider === 'string' && obj.rider.trim().length > 2) return obj.rider.trim();
-      if (typeof obj.fullName === 'string' && obj.fullName.trim().length > 2) return obj.fullName.trim();
+      if (Array.isArray(node)) {
+        for (let item of node) {
+          deepScanForRiders(item);
+        }
+        return;
+      }
 
-      const fname = obj.fname || obj.firstName || obj.givenName;
-      const lname = obj.lname || obj.lastName || obj.familyName;
-      if (fname && lname && typeof fname === 'string' && typeof lname === 'string') {
-        return `${fname.trim()} ${lname.trim()}`;
+      if (typeof node === 'object') {
+        // Try extracting rider name from object
+        const name = extractRiderName(node);
+        if (name) {
+          const cleanName = formatName(name);
+          if (!ridersMap[cleanName]) {
+            ridersMap[cleanName] = { gates: [], laps: [] };
+          }
+
+          // Extract timings attached to this rider object
+          extractTimings(node, ridersMap[cleanName]);
+        }
+
+        // Recursively check child fields/objects
+        for (let key in node) {
+          if (node.hasOwnProperty(key) && typeof node[key] === 'object') {
+            deepScanForRiders(node[key]);
+          }
+        }
+      }
+    }
+
+    function extractRiderName(obj) {
+      if (typeof obj.name === 'string' && isValidName(obj.name)) return obj.name;
+      if (typeof obj.riderName === 'string' && isValidName(obj.riderName)) return obj.riderName;
+      if (typeof obj.rider === 'string' && isValidName(obj.rider)) return obj.rider;
+      if (typeof obj.fullName === 'string' && isValidName(obj.fullName)) return obj.fullName;
+
+      const f = obj.fname || obj.firstName || obj.givenName;
+      const l = obj.lname || obj.lastName || obj.familyName;
+      if (typeof f === 'string' && typeof l === 'string') {
+        const combined = `${f} ${l}`.trim();
+        if (isValidName(combined)) return combined;
       }
 
       return null;
     }
 
-    function scanObjectForRiders(obj) {
-      if (!obj || typeof obj !== 'object') return;
+    function isValidName(str) {
+      if (!str) return false;
+      const s = str.trim();
+      // Ignore common non-rider strings
+      if (s.length < 3) return false;
+      if (s.toLowerCase().includes("bmx")) return false;
+      if (s.toLowerCase().includes("club")) return false;
+      if (s.toLowerCase().includes("round")) return false;
+      if (s.toLowerCase().includes("moto")) return false;
+      return true;
+    }
 
-      const name = extractName(obj);
+    function formatName(str) {
+      return str.trim().toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    }
 
-      if (name) {
-        // Standardize Title Case name (e.g. "HUDSON DALEY" -> "Hudson Daley")
-        const cleanName = name.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-
-        if (!ridersMap[cleanName]) {
-          ridersMap[cleanName] = { gates: [], laps: [] };
+    function extractTimings(obj, riderRecord) {
+      // Gate split fields (between 1s and 15s)
+      const gateFields = [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1, obj.g, obj.split_1];
+      gateFields.forEach(val => {
+        const n = parseFloat(val);
+        if (!isNaN(n) && n > 1.0 && n < 15.0) {
+          riderRecord.gates.push(n);
         }
+      });
 
-        // Gate splits (1.0s to 15.0s)
-        [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1, obj.g].forEach(val => {
-          const num = parseFloat(val);
-          if (!isNaN(num) && num > 0 && num < 15) ridersMap[cleanName].gates.push(num);
-        });
-
-        // Full Laps (>= 15.0s)
-        [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish, obj.t].forEach(val => {
-          const num = parseFloat(val);
-          if (!isNaN(num) && num >= 15) ridersMap[cleanName].laps.push(num);
-        });
-      }
-
-      for (let k in obj) {
-        if (obj.hasOwnProperty(k)) scanObjectForRiders(obj[k]);
-      }
+      // Full lap fields (>= 15s)
+      const lapFields = [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish, obj.t, obj.total];
+      lapFields.forEach(val => {
+        const n = parseFloat(val);
+        if (!isNaN(n) && n >= 15.0 && n < 120.0) {
+          riderRecord.laps.push(n);
+        }
+      });
     }
 
     function calculateRiderPBs() {
