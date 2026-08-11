@@ -143,7 +143,7 @@
           </thead>
           <tbody></tbody>
         </table>
-        <div class="pb-note">Monthly PBs start from March 2026. Months with no data show "—".</div>
+        <div class="pb-note">Monthly PBs starting from March 2026. Months with no data show "—".</div>
       </div>
     </div>
   </div>
@@ -185,6 +185,7 @@ const CLUBS = {
 };
 
 const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev?url=";
+const MARCH_2026_CUTOFF = new Date("2026-03-01T00:00:00Z");
 
 const clubEl = document.getElementById("club");
 const riderEl = document.getElementById("rider");
@@ -228,23 +229,39 @@ function collectEventIdsFromOrgJson(obj) {
 
 function extractRiderNameFromNode(node) {
   if (!node || typeof node !== "object") return null;
-  const candidates = ["name","riderName","rider","fullName","firstName","lastName","fname","lname","givenName","familyName"];
+
+  // 1. Check if both first and last name fields exist on the object
+  const first = node.firstName || node.fname || node.givenName;
+  const last = node.lastName || node.lname || node.familyName;
+  if (first && last && typeof first === "string" && typeof last === "string") {
+    const combined = `${first.trim()} ${last.trim()}`.trim();
+    if (combined.length > 2) return formatName(combined);
+  }
+
+  // 2. Check full name strings
+  const candidates = ["name", "riderName", "rider", "fullName"];
   for (const key of candidates) {
     if (node[key] && typeof node[key] === "string") {
       const s = node[key].trim();
       const lower = s.toLowerCase();
-      if (s.length > 1 && !/^\d+$/.test(s) && !lower.includes("bmx club") && !lower.includes("official result") && !lower.includes("round ") && !lower.includes("class")) {
-        return s;
+      if (
+        s.length > 2 &&
+        !/^\d+$/.test(s) &&
+        !lower.includes("bmx club") &&
+        !lower.includes("official result") &&
+        !lower.includes("round ") &&
+        !lower.includes("class")
+      ) {
+        return formatName(s);
       }
     }
   }
-  const first = node.firstName || node.fname || node.givenName;
-  const last = node.lastName || node.lname || node.familyName;
-  if (first && last && typeof first === "string" && typeof last === "string") {
-    const combined = `${first} ${last}`.trim();
-    if (combined.length > 1) return combined;
-  }
+
   return null;
+}
+
+function formatName(str) {
+  return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 }
 
 function parseToSeconds(value) {
@@ -331,209 +348,4 @@ function setProgress(percent, sub) {
 
 async function startClubScan() {
   const clubCode = clubEl.value;
-  riderEl.innerHTML = '<option value="">-- Loading Riders... --</option>';
-  riderEl.disabled = true;
-  gatePBEl.textContent = "--";
-  lapPBEl.textContent = "--";
-  monthlySection.style.display = "none";
-  monthlyTableBody.innerHTML = "";
-
-  if (!clubCode) {
-    statusEl.textContent = "Please select a club first.";
-    riderEl.innerHTML = '<option value="">-- Select a Club First --</option>';
-    return;
-  }
-
-  const clubInfo = CLUBS[clubCode];
-  if (!clubInfo) return;
-
-  if (abortController) {
-    try { abortController.abort(); } catch(e) {}
-  }
-  abortController = new AbortController();
-  const signal = abortController.signal;
-  cancelBtn.disabled = false;
-  isScanning = true;
-
-  statusEl.textContent = `Scanning ${clubInfo.name} data...`;
-  showOverlay(`Scanning ${clubInfo.name}...`, "Fetching event list...");
-
-  try {
-    let eventIds = [];
-
-    // 1. Try Org endpoint
-    try {
-      const orgJson = await fetchJsonWithAbort(`/json/org/${clubCode}`, signal);
-      eventIds = collectEventIdsFromOrgJson(orgJson);
-    } catch (e) {
-      console.warn("Could not fetch org JSON, falling back to static event list.");
-    }
-
-    // 2. Use Fallbacks if Org endpoint returned no events
-    if (eventIds.length === 0 && clubInfo.fallbackEvents && clubInfo.fallbackEvents.length > 0) {
-      eventIds = clubInfo.fallbackEvents;
-    }
-
-    if (!eventIds.length) {
-      hideOverlay();
-      statusEl.textContent = `No events found for ${clubInfo.name}.`;
-      riderEl.innerHTML = '<option value="">No Riders Found</option>';
-      cancelBtn.disabled = true;
-      isScanning = false;
-      return;
-    }
-
-    ridersData = {};
-    const total = eventIds.length;
-    let processed = 0;
-
-    for (const eventId of eventIds) {
-      if (signal.aborted) throw new Error("Scan cancelled");
-      setProgress(Math.round((processed / total) * 100), `Loading event ${processed + 1} of ${total}`);
-      try {
-        const eventJson = await fetchJsonWithAbort(`/json/event/${eventId}`, signal);
-        const dateStr = eventJson.startDate || eventJson.date || eventJson.created || null;
-        const eventDate = dateStr ? new Date(dateStr) : new Date();
-        deepScanEventForRiders(eventJson, eventDate, ridersData);
-      } catch (e) {
-        console.warn("Event fetch/scan error", eventId, e);
-      }
-      processed++;
-      setProgress(Math.round((processed / total) * 100), `Processed ${processed} / ${total} events`);
-      await new Promise(r => setTimeout(r, 40));
-    }
-
-    setProgress(100, "Finalizing rider list...");
-    const riderNames = Object.keys(ridersData).sort((a,b) => a.localeCompare(b, undefined, {sensitivity:'base'}));
-
-    if (!riderNames.length) {
-      hideOverlay();
-      statusEl.textContent = `No riders found in events for ${clubInfo.name}.`;
-      riderEl.innerHTML = '<option value="">No Riders Found</option>';
-      cancelBtn.disabled = true;
-      isScanning = false;
-      return;
-    }
-
-    riderEl.innerHTML = '<option value="">-- Select a Rider --</option>';
-    for (const name of riderNames) {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      riderEl.appendChild(opt);
-    }
-    riderEl.disabled = false;
-    statusEl.textContent = `Loaded ${riderNames.length} riders from ${eventIds.length} events!`;
-    hideOverlay();
-    cancelBtn.disabled = true;
-    isScanning = false;
-
-  } catch (err) {
-    console.error("Club scan error:", err);
-    hideOverlay();
-    if (err.name === "AbortError" || err.message === "Scan cancelled") {
-      statusEl.textContent = "Scan cancelled.";
-      riderEl.innerHTML = '<option value="">-- Select a Club First --</option>';
-    } else {
-      statusEl.textContent = "Error loading riders. Check connection.";
-      riderEl.innerHTML = '<option value="">Error Loading Riders</option>';
-    }
-    cancelBtn.disabled = true;
-    isScanning = false;
-  }
-}
-
-cancelBtn.addEventListener("click", () => {
-  if (!isScanning || !abortController) return;
-  try {
-    abortController.abort();
-  } catch (e) {}
-  cancelBtn.disabled = true;
-  setProgress(0, "Cancelling...");
-});
-
-clearBtn.addEventListener("click", () => {
-  if (isScanning && abortController) {
-    try { abortController.abort(); } catch(e) {}
-  }
-  clubEl.value = "";
-  riderEl.innerHTML = '<option value="">-- Select a Club First --</option>';
-  riderEl.disabled = true;
-  gatePBEl.textContent = "--";
-  lapPBEl.textContent = "--";
-  monthlySection.style.display = "none";
-  monthlyTableBody.innerHTML = "";
-  statusEl.textContent = "Cleared.";
-  hideOverlay();
-  cancelBtn.disabled = true;
-  isScanning = false;
-});
-
-riderEl.addEventListener("change", () => {
-  const name = riderEl.value;
-  gatePBEl.textContent = "--";
-  lapPBEl.textContent = "--";
-  monthlySection.style.display = "none";
-  monthlyTableBody.innerHTML = "";
-
-  if (!name) {
-    statusEl.textContent = "Select a rider to view PBs.";
-    return;
-  }
-  statusEl.textContent = `Calculating PBs for ${name}...`;
-
-  const records = ridersData[name] || [];
-  if (!records.length) {
-    statusEl.textContent = `No timing records found for ${name}.`;
-    return;
-  }
-
-  const gates = records.filter(r => r.gate != null).map(r => r.gate);
-  const laps = records.filter(r => r.lap != null).map(r => r.lap);
-  const bestGate = gates.length ? Math.min(...gates) : null;
-  const bestLap = laps.length ? Math.min(...laps) : null;
-  gatePBEl.textContent = bestGate !== null ? `${bestGate.toFixed(3)}s` : "N/A";
-  lapPBEl.textContent = bestLap !== null ? `${bestLap.toFixed(3)}s` : "N/A";
-
-  const start = new Date("2026-03-01T00:00:00Z");
-  const now = new Date();
-  const months = [];
-  const m = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (m <= now) {
-    months.push(new Date(m.getTime()));
-    m.setMonth(m.getMonth() + 1);
-  }
-
-  const monthBuckets = months.map(d => {
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-    return { key, label: d.toLocaleString(undefined, { month: "short", year: "numeric" }), gates: [], laps: [] };
-  });
-
-  for (const rec of records) {
-    if (!rec.date) continue;
-    const dt = new Date(rec.date);
-    const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;
-    const bucket = monthBuckets.find(b => b.key === key);
-    if (!bucket) continue;
-    if (rec.gate != null) bucket.gates.push(rec.gate);
-    if (rec.lap != null) bucket.laps.push(rec.lap);
-  }
-
-  monthlyTableBody.innerHTML = "";
-  for (const b of monthBuckets) {
-    const bestG = b.gates.length ? Math.min(...b.gates) : null;
-    const bestL = b.laps.length ? Math.min(...b.laps) : null;
-    const tr = document.createElement("tr");
-    const tdMonth = document.createElement("td"); tdMonth.textContent = b.label;
-    const tdGate = document.createElement("td"); tdGate.textContent = bestG !== null ? `${bestG.toFixed(3)}s` : "—";
-    const tdLap = document.createElement("td"); tdLap.textContent = bestL !== null ? `${bestL.toFixed(3)}s` : "—";
-    tr.appendChild(tdMonth); tr.appendChild(tdGate); tr.appendChild(tdLap);
-    monthlyTableBody.appendChild(tr);
-  }
-
-  monthlySection.style.display = "block";
-  statusEl.textContent = `Showing PBs for ${name}.`;
-});
-</script>
-</body>
-</html>
+  riderEl.innerHTML = '<option value
