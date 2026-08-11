@@ -3,53 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Your BMX PB's</title>
 
   <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      background-color: #000000;
+      background: #000000;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 20px;
       color: #CCFF00;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       min-height: 100vh;
     }
 
     .page-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       width: 100%;
+      display: flex;
+      justify-content: center;
     }
 
     .container {
-      background-color: #111111;
+      background: #111111;
       width: 100%;
-      max-width: 480px;
+      max-width: 500px;
       padding: 25px;
       border-radius: 20px;
       border: 2px solid #CCFF00;
-      box-shadow: 0 0 20px rgba(204, 255, 0, 0.2);
-      text-align: center;
+      box-shadow: 0 0 25px rgba(204, 255, 0, 0.2);
     }
 
     h1 {
-      margin: 0 0 8px 0;
-      font-size: 28px;
+      margin: 0;
+      text-align: center;
+      font-size: 30px;
       letter-spacing: 1px;
       color: #CCFF00;
       text-transform: uppercase;
     }
 
     .subtitle {
+      text-align: center;
       font-size: 13px;
       color: #CCFF00;
+      margin-top: 8px;
       margin-bottom: 25px;
       line-height: 1.4;
     }
+
+    /* =========================
+       NAVIGATION TABS
+    ========================= */
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 13px 8px;
+      border-radius: 10px;
+      border: 2px solid #CCFF00;
+      background: #1a1a1a;
+      color: #CCFF00;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      background: #CCFF00;
+      color: #000000;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* =========================
+       FORM
+    ========================= */
 
     .selector-group {
       display: flex;
@@ -60,16 +103,15 @@
 
     label {
       font-size: 12px;
-      text-align: left;
       font-weight: bold;
       color: #CCFF00;
-      margin-bottom: -6px;
       text-transform: uppercase;
+      margin-bottom: -6px;
     }
 
     select,
     input {
-      background-color: #1a1a1a;
+      background: #1a1a1a;
       color: #CCFF00;
       border: 2px solid #CCFF00;
       padding: 12px 15px;
@@ -78,7 +120,6 @@
       font-weight: bold;
       outline: none;
       width: 100%;
-      box-sizing: border-box;
     }
 
     select:focus,
@@ -90,11 +131,11 @@
       text-transform: uppercase;
     }
 
-    .find-button {
-      background-color: #CCFF00;
+    .main-button {
+      background: #CCFF00;
       color: #000000;
       border: none;
-      padding: 13px;
+      padding: 14px;
       border-radius: 10px;
       font-size: 15px;
       font-weight: bold;
@@ -102,18 +143,23 @@
       width: 100%;
     }
 
-    .find-button:active {
+    .main-button:active {
       transform: scale(0.98);
     }
+
+    /* =========================
+       PB CARDS
+    ========================= */
 
     .cards-container {
       display: flex;
       flex-direction: column;
       gap: 15px;
+      margin-top: 10px;
     }
 
     .card {
-      background-color: #1a1a1a;
+      background: #1a1a1a;
       border: 1px solid #333333;
       padding: 20px;
       border-radius: 12px;
@@ -135,35 +181,104 @@
       color: #CCFF00;
     }
 
+    /* =========================
+       MY SQORZ INFO
+    ========================= */
+
+    .info-box {
+      background: #1a1a1a;
+      border: 1px solid #333333;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .info-box strong {
+      color: #CCFF00;
+    }
+
+    .small-note {
+      font-size: 11px;
+      color: #999999;
+      text-align: center;
+      margin-top: 12px;
+      line-height: 1.4;
+    }
+
+    /* =========================
+       STATUS
+    ========================= */
+
     #status {
       font-size: 12px;
       color: #CCFF00;
       margin-top: 15px;
       font-weight: bold;
       line-height: 1.4;
+      text-align: center;
     }
+
   </style>
 </head>
 
 <body>
 
-  <div class="page-wrapper">
+<div class="page-wrapper">
 
-    <div class="container">
+  <div class="container">
 
-      <h1>Your BMX PB's</h1>
+    <h1>Your BMX PB's</h1>
 
-      <div class="subtitle">
-        Don't go searching for your PB's for hours — go to Your BMX PB's
-      </div>
+    <div class="subtitle">
+      Don't go searching for your PB's for hours — go to Your BMX PB's
+    </div>
+
+
+    <!-- =========================
+         NAVIGATION
+    ========================= -->
+
+    <div class="tabs">
+
+      <button
+        class="tab-button active"
+        onclick="showPage('our-sqorz', this)"
+      >
+        OUR SQORZ
+      </button>
+
+      <button
+        class="tab-button"
+        onclick="showPage('my-sqorz', this)"
+      >
+        MY SQORZ
+      </button>
+
+    </div>
+
+
+    <!-- =========================
+         OUR SQORZ PAGE
+    ========================= -->
+
+    <div
+      id="our-sqorz"
+      class="page active"
+    >
 
       <div class="selector-group">
 
         <label for="track-select">
-          Select Club / Track:
+          Select Club / Track
         </label>
 
-        <select id="track-select" onchange="loadClubData()">
+        <select
+          id="track-select"
+          onchange="loadClubData()"
+        >
+
           <option value="">
             -- Choose a Club --
           </option>
@@ -181,937 +296,1111 @@
           </option>
 
           <option value="moranbah">
-            Moranbah BMX club
+            Moranbah BMX Club
           </option>
 
           <option value="bmxch">
-            Central Highlands BMX club
+            Central Highlands BMX Club
           </option>
+
         </select>
 
+
         <label for="rider-select">
-          Select Rider:
+          Select Rider
         </label>
 
-        <select id="rider-select" onchange="calculateRiderPBs()">
+        <select
+          id="rider-select"
+          onchange="calculateRiderPBs()"
+        >
+
           <option value="">
             -- Select a Club First --
           </option>
+
         </select>
 
-        <label for="transponder-input">
-          Enter Transponder Number:
+      </div>
+
+
+      <div class="cards-container">
+
+        <div class="card">
+
+          <div class="card-title">
+            Gate PB
+          </div>
+
+          <div
+            class="card-value"
+            id="gate-pb"
+          >
+            --
+          </div>
+
+        </div>
+
+
+        <div class="card">
+
+          <div class="card-title">
+            Whole Lap PB
+          </div>
+
+          <div
+            class="card-value"
+            id="lap-pb"
+          >
+            --
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div id="status">
+        Select a club above to load riders...
+      </div>
+
+    </div>
+
+
+    <!-- =========================
+         MY SQORZ PAGE
+    ========================= -->
+
+    <div
+      id="my-sqorz"
+      class="page"
+    >
+
+      <div class="info-box">
+
+        <strong>MY SQORZ RESULTS</strong>
+
+        <br><br>
+
+        Enter your MYLAPS/SQORZ transponder number below.
+
+        <br><br>
+
+        Your personal SQORZ training results will open separately.
+
+      </div>
+
+
+      <div class="selector-group">
+
+        <label for="my-transponder">
+          Transponder Number
         </label>
 
         <input
           type="text"
-          id="transponder-input"
+          id="my-transponder"
           placeholder="e.g. KG-44425"
           autocomplete="off"
           maxlength="30"
         >
 
         <button
-          class="find-button"
-          onclick="findTransponderPBs()"
+          class="main-button"
+          onclick="openMySqorz()"
         >
-          FIND MY PBs
+          FIND MY RESULTS
         </button>
 
       </div>
 
-      <div class="cards-container">
 
-        <div class="card">
-          <div class="card-title">
-            Gate PB
-          </div>
+      <div class="info-box">
 
-          <div class="card-value" id="gate-pb">
-            --
-          </div>
-        </div>
+        <strong>How it works</strong>
 
-        <div class="card">
-          <div class="card-title">
-            Whole Lap PB
-          </div>
+        <br><br>
 
-          <div class="card-value" id="lap-pb">
-            --
-          </div>
-        </div>
+        1. Enter your transponder number.
+
+        <br>
+
+        2. Press FIND MY RESULTS.
+
+        <br>
+
+        3. Your My SQORZ page opens.
+
+        <br>
+
+        4. You can see your available training/timing data.
 
       </div>
 
-      <div id="status">
-        Select a club above to start loading riders...
+
+      <div class="small-note">
+
+        Your BMX PB's does not store your transponder number.
+
       </div>
 
     </div>
 
   </div>
 
-  <script>
-    const PROXY_URL =
-      "https://sqorz-proxy.hudsondaley55.workers.dev";
+</div>
 
-    const CLUBS_DATA = {
 
-      rockhampton: {
-        name: "Rockhampton BMX",
-        org: "rockybmx"
-      },
+<script>
 
-      harbourcity: {
-        name: "Harbour City BMX",
-        org: "harbourcitybmx"
-      },
+  /* =====================================================
+     PAGE SWITCHING
+  ===================================================== */
 
-      cairns: {
-        name: "Cairns BMX",
-        org: "cairnsbmx"
-      },
+  function showPage(pageId, button) {
 
-      moranbah: {
-        name: "Moranbah BMX club",
-        org: "moranbahbmx"
-      },
+    document
+      .querySelectorAll(".page")
+      .forEach(page => {
 
-      bmxch: {
-        name: "Central Highlands BMX club",
-        org: "centralhighlandsbmx"
-      }
+        page.classList.remove("active");
 
-    };
+      });
 
-    let ridersMap = {};
+    document
+      .querySelectorAll(".tab-button")
+      .forEach(btn => {
 
-    async function fetchSqorzJson(urlPath) {
+        btn.classList.remove("active");
 
-      const targetUrl =
-        `https://our.sqorz.com${urlPath}`;
+      });
 
-      const proxyUrl =
-        `${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`;
+    document
+      .getElementById(pageId)
+      .classList.add("active");
 
-      const response =
-        await fetch(proxyUrl);
+    button.classList.add("active");
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+  }
 
-      return await response.json();
+
+  /* =====================================================
+     MY SQORZ
+  ===================================================== */
+
+  function openMySqorz() {
+
+    const input =
+      document
+        .getElementById("my-transponder")
+        .value
+        .trim()
+        .toUpperCase();
+
+    if (!input) {
+
+      alert(
+        "Please enter your transponder number."
+      );
+
+      return;
     }
 
-    async function getClubEventIds(orgCode) {
 
-      const data =
-        await fetchSqorzJson(`/json/org/${orgCode}`);
+    /*
+      My SQORZ has public personalised
+      training pages using this format.
+    */
 
-      const eventIds = new Set();
+    const url =
+      "https://my.sqorz.com/training/transponder/"
+      + encodeURIComponent(input);
 
-      const eventIdPattern =
-        /^[a-f0-9]{24}$/i;
 
-      function scan(node, parentKey = "") {
+    window.open(
+      url,
+      "_blank"
+    );
 
-        if (!node) return;
+  }
 
-        if (Array.isArray(node)) {
 
-          for (const item of node) {
-            scan(item, parentKey);
-          }
+  /* =====================================================
+     OUR SQORZ
+  ===================================================== */
 
-          return;
-        }
+  const PROXY_URL =
+    "https://sqorz-proxy.hudsondaley55.workers.dev";
 
-        if (typeof node !== "object") {
-          return;
-        }
 
-        for (const key of Object.keys(node)) {
+  const CLUBS_DATA = {
 
-          const value = node[key];
-          const lowerKey = key.toLowerCase();
+    rockhampton: {
+      name: "Rockhampton BMX",
+      org: "rockybmx"
+    },
 
-          if (
-            typeof value === "string" &&
-            eventIdPattern.test(value.trim()) &&
-            (
-              lowerKey.includes("event") ||
-              lowerKey === "id" ||
-              lowerKey.includes("key")
-            )
-          ) {
+    harbourcity: {
+      name: "Harbour City BMX",
+      org: "harbourcitybmx"
+    },
 
-            eventIds.add(value.trim());
-          }
+    cairns: {
+      name: "Cairns BMX",
+      org: "cairnsbmx"
+    },
 
-          if (
-            eventIdPattern.test(key.trim()) &&
-            (
-              lowerKey.includes("event") ||
-              parentKey.toLowerCase().includes("event")
-            )
-          ) {
+    moranbah: {
+      name: "Moranbah BMX Club",
+      org: "moranbahbmx"
+    },
 
-            eventIds.add(key.trim());
-          }
-
-          if (typeof value === "object") {
-            scan(value, key);
-          }
-        }
-      }
-
-      scan(data);
-
-      if (eventIds.size === 0) {
-
-        function fallbackScan(node) {
-
-          if (!node) return;
-
-          if (Array.isArray(node)) {
-
-            for (const item of node) {
-              fallbackScan(item);
-            }
-
-            return;
-          }
-
-          if (typeof node !== "object") {
-            return;
-          }
-
-          for (const key of Object.keys(node)) {
-
-            const value = node[key];
-
-            if (
-              typeof value === "string" &&
-              eventIdPattern.test(value.trim())
-            ) {
-
-              eventIds.add(value.trim());
-            }
-
-            if (typeof value === "object") {
-              fallbackScan(value);
-            }
-          }
-        }
-
-        fallbackScan(data);
-      }
-
-      return Array.from(eventIds);
+    bmxch: {
+      name: "Central Highlands BMX Club",
+      org: "centralhighlandsbmx"
     }
 
-    async function loadClubData() {
+  };
 
-      const statusEl =
-        document.getElementById("status");
 
-      const clubCode =
-        document.getElementById("track-select").value;
+  let ridersMap = {};
 
-      const riderSelect =
-        document.getElementById("rider-select");
 
-      document.getElementById("gate-pb").textContent = "--";
-      document.getElementById("lap-pb").textContent = "--";
+  /* =====================================================
+     SQORZ FETCH
+  ===================================================== */
 
-      if (!clubCode) {
+  async function fetchSqorzJson(urlPath) {
 
-        riderSelect.innerHTML =
-          '<option value="">-- Select a Club First --</option>';
+    const targetUrl =
+      `https://our.sqorz.com${urlPath}`;
 
-        statusEl.textContent =
-          "Select a club above to start loading riders...";
+    const proxyUrl =
+      `${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`;
 
-        return;
-      }
+    const response =
+      await fetch(proxyUrl);
 
-      const clubInfo =
-        CLUBS_DATA[clubCode];
+    if (!response.ok) {
 
-      if (!clubInfo) {
-        statusEl.textContent = "Club not found.";
-        return;
-      }
+      throw new Error(
+        `HTTP ${response.status}`
+      );
 
-      riderSelect.innerHTML =
-        '<option value="">-- Loading Riders... --</option>';
-
-      statusEl.textContent =
-        `🔎 Finding ${clubInfo.name} events on SQORZ...`;
-
-      ridersMap = {};
-
-      try {
-
-        const eventIds =
-          await getClubEventIds(clubInfo.org);
-
-        if (eventIds.length === 0) {
-
-          riderSelect.innerHTML =
-            '<option value="">No Events Found</option>';
-
-          statusEl.textContent =
-            `No SQORZ events were found for ${clubInfo.name}.`;
-
-          return;
-        }
-
-        statusEl.textContent =
-          `Found ${eventIds.length} SQORZ events. Loading riders...`;
-
-        for (const eventId of eventIds) {
-
-          try {
-
-            const eventData =
-              await fetchSqorzJson(`/json/event/${eventId}`);
-
-            deepScanForRiders(eventData);
-
-          } catch (error) {
-
-            console.warn(
-              "Could not load event:",
-              eventId,
-              error
-            );
-          }
-        }
-
-        const sortedRiders =
-          Object.keys(ridersMap).sort();
-
-        if (sortedRiders.length === 0) {
-
-          riderSelect.innerHTML =
-            '<option value="">No Riders Found</option>';
-
-          statusEl.textContent =
-            "No riders were found in the SQORZ events.";
-
-          return;
-        }
-
-        riderSelect.innerHTML =
-          '<option value="">-- Select a Rider --</option>';
-
-        sortedRiders.forEach(rider => {
-
-          const option =
-            document.createElement("option");
-
-          option.value = rider;
-          option.textContent = rider;
-
-          riderSelect.appendChild(option);
-        });
-
-        statusEl.textContent =
-          `✅ Loaded ${sortedRiders.length} riders from ${eventIds.length} events.`;
-
-      } catch (error) {
-
-        console.error(error);
-
-        statusEl.textContent =
-          "❌ Could not load the SQORZ club data.";
-      }
     }
 
-    function deepScanForRiders(
+    return await response.json();
+
+  }
+
+
+  /* =====================================================
+     FIND EVENT IDS
+  ===================================================== */
+
+  async function getClubEventIds(orgCode) {
+
+    const data =
+      await fetchSqorzJson(
+        `/json/org/${orgCode}`
+      );
+
+
+    const eventIds =
+      new Set();
+
+
+    const eventIdPattern =
+      /^[a-f0-9]{24}$/i;
+
+
+    function scan(
       node,
-      currentRiderName = null
+      parentKey = ""
     ) {
 
       if (!node) return;
 
-      if (Array.isArray(node)) {
-
-        for (const item of node) {
-          deepScanForRiders(item, currentRiderName);
-        }
-
-        return;
-      }
-
-      if (typeof node === "object") {
-
-        const foundName =
-          extractRiderName(node);
-
-        const activeRider =
-          foundName
-            ? formatName(foundName)
-            : currentRiderName;
-
-        if (activeRider) {
-
-          if (!ridersMap[activeRider]) {
-
-            ridersMap[activeRider] = {
-              gates: [],
-              laps: []
-            };
-          }
-
-          extractTimingsBulletproof(
-            node,
-            ridersMap[activeRider]
-          );
-        }
-
-        for (const key in node) {
-
-          if (
-            node.hasOwnProperty(key) &&
-            typeof node[key] === "object"
-          ) {
-
-            deepScanForRiders(
-              node[key],
-              activeRider
-            );
-          }
-        }
-      }
-    }
-
-    function extractRiderName(obj) {
-
-      if (
-        typeof obj.name === "string" &&
-        isValidName(obj.name)
-      ) {
-        return obj.name;
-      }
-
-      if (
-        typeof obj.riderName === "string" &&
-        isValidName(obj.riderName)
-      ) {
-        return obj.riderName;
-      }
-
-      if (
-        typeof obj.rider === "string" &&
-        isValidName(obj.rider)
-      ) {
-        return obj.rider;
-      }
-
-      if (
-        typeof obj.fullName === "string" &&
-        isValidName(obj.fullName)
-      ) {
-        return obj.fullName;
-      }
-
-      const first =
-        obj.fname ||
-        obj.firstName ||
-        obj.givenName;
-
-      const last =
-        obj.lname ||
-        obj.lastName ||
-        obj.familyName;
-
-      if (
-        typeof first === "string" &&
-        typeof last === "string"
-      ) {
-
-        const combined =
-          `${first} ${last}`.trim();
-
-        if (isValidName(combined)) {
-          return combined;
-        }
-      }
-
-      return null;
-    }
-
-    function isValidName(str) {
-
-      if (!str) return false;
-
-      const s = str.trim();
-
-      if (s.length < 3) {
-        return false;
-      }
-
-      const lower = s.toLowerCase();
-
-      if (
-        lower.includes("bmx club") ||
-        lower.includes("official result") ||
-        lower.includes("round ") ||
-        lower.includes("class")
-      ) {
-        return false;
-      }
-
-      return true;
-    }
-
-    function formatName(str) {
-
-      return str
-        .trim()
-        .toLowerCase()
-        .replace(
-          /\b\w/g,
-          letter => letter.toUpperCase()
-        );
-    }
-
-    function parseToSeconds(value) {
-
-      if (typeof value === "number") {
-        return value;
-      }
-
-      if (typeof value !== "string") {
-        return null;
-      }
-
-      const clean = value.trim();
-
-      if (!clean) {
-        return null;
-      }
-
-      if (clean.includes(":")) {
-
-        const parts = clean.split(":");
-
-        if (parts.length === 2) {
-
-          const minutes = parseFloat(parts[0]);
-          const seconds = parseFloat(parts[1]);
-
-          if (
-            !isNaN(minutes) &&
-            !isNaN(seconds)
-          ) {
-
-            return (minutes * 60) + seconds;
-          }
-        }
-      }
-
-      const number = parseFloat(clean);
-
-      return isNaN(number)
-        ? null
-        : number;
-    }
-
-    function extractTimingsBulletproof(
-      obj,
-      riderRecord
-    ) {
-
-      for (const key in obj) {
-
-        if (!obj.hasOwnProperty(key)) continue;
-
-        if (
-          key === "name" ||
-          key === "riderName" ||
-          key === "rider" ||
-          key === "fullName"
-        ) continue;
-
-        const keyLower = key.toLowerCase();
-
-        let value =
-          parseToSeconds(obj[key]);
-
-        if (
-          value === null ||
-          value <= 0
-        ) continue;
-
-        if (
-          value >= 1000 &&
-          value < 120000
-        ) {
-          value = value / 1000;
-        }
-
-        if (
-          value >= 1.2 &&
-          value <= 5
-        ) {
-          riderRecord.gates.push(value);
-        }
-
-        if (
-          value >= 26 &&
-          value <= 90
-        ) {
-
-          if (
-            keyLower.includes("laptime") ||
-            keyLower.includes("finishtime") ||
-            keyLower === "time" ||
-            keyLower === "finish" ||
-            keyLower === "lap" ||
-            keyLower === "t"
-          ) {
-
-            riderRecord.laps.push(value);
-          }
-        }
-      }
-    }
-
-    function calculateRiderPBs() {
-
-      const rider =
-        document.getElementById("rider-select").value;
-
-      if (
-        !rider ||
-        !ridersMap[rider]
-      ) {
-        return;
-      }
-
-      const data = ridersMap[rider];
-
-      const bestGate =
-        data.gates.length
-          ? Math.min(...data.gates)
-          : null;
-
-      const bestLap =
-        data.laps.length
-          ? Math.min(...data.laps)
-          : null;
-
-      document.getElementById("gate-pb").textContent =
-        bestGate !== null
-          ? `${bestGate.toFixed(3)}s`
-          : "N/A";
-
-      document.getElementById("lap-pb").textContent =
-        bestLap !== null
-          ? `${bestLap.toFixed(3)}s`
-          : "N/A";
-
-      document.getElementById("status").textContent =
-        `Showing PBs for ${rider}`;
-    }
-
-    async function findTransponderPBs() {
-
-      const clubCode =
-        document.getElementById("track-select").value;
-
-      const input =
-        document.getElementById("transponder-input")
-          .value
-          .trim()
-          .toUpperCase();
-
-      const status =
-        document.getElementById("status");
-
-      document.getElementById("gate-pb").textContent = "--";
-      document.getElementById("lap-pb").textContent = "--";
-
-      if (!clubCode) {
-
-        status.textContent =
-          "⚠️ Please select a club first.";
-
-        return;
-      }
-
-      if (!input) {
-
-        status.textContent =
-          "⚠️ Please enter your transponder number.";
-
-        return;
-      }
-
-      const club =
-        CLUBS_DATA[clubCode];
-
-      status.textContent =
-        `🔎 Finding ${club.name} events...`;
-
-      try {
-
-        const eventIds =
-          await getClubEventIds(club.org);
-
-        if (eventIds.length === 0) {
-
-          status.textContent =
-            `❌ No SQORZ events found for ${club.name}.`;
-
-          return;
-        }
-
-        status.textContent =
-          `🔎 Searching ${eventIds.length} SQORZ events for ${input}...`;
-
-        const allGates = [];
-        const allLaps = [];
-
-        let eventsFound = 0;
-
-        for (const eventId of eventIds) {
-
-          try {
-
-            const eventData =
-              await fetchSqorzJson(
-                `/json/event/${eventId}`
-              );
-
-            const result =
-              searchForTransponder(
-                eventData,
-                input
-              );
-
-            if (result) {
-
-              eventsFound++;
-
-              allGates.push(...result.gates);
-              allLaps.push(...result.laps);
-            }
-
-          } catch (error) {
-
-            console.warn(
-              "Event search failed:",
-              eventId,
-              error
-            );
-          }
-        }
-
-        if (eventsFound === 0) {
-
-          status.textContent =
-            `❌ ${input} was not found in ${club.name}'s SQORZ events.`;
-
-          return;
-        }
-
-        const bestGate =
-          allGates.length
-            ? Math.min(...allGates)
-            : null;
-
-        const bestLap =
-          allLaps.length
-            ? Math.min(...allLaps)
-            : null;
-
-        document.getElementById("gate-pb").textContent =
-          bestGate !== null
-            ? `${bestGate.toFixed(3)}s`
-            : "N/A";
-
-        document.getElementById("lap-pb").textContent =
-          bestLap !== null
-            ? `${bestLap.toFixed(3)}s`
-            : "N/A";
-
-        status.textContent =
-          `✅ Found ${input} in ${eventsFound} event${eventsFound === 1 ? "" : "s"}!`;
-
-      } catch (error) {
-
-        console.error(error);
-
-        status.textContent =
-          "❌ Could not search SQORZ.";
-      }
-    }
-
-    function searchForTransponder(
-      node,
-      target
-    ) {
-
-      if (!node) return null;
 
       if (Array.isArray(node)) {
 
         for (const item of node) {
 
-          const result =
-            searchForTransponder(
-              item,
-              target
-            );
-
-          if (result) return result;
-        }
-
-        return null;
-      }
-
-      if (typeof node !== "object") {
-        return null;
-      }
-
-      if (
-        typeof node.transponder === "string"
-      ) {
-
-        const transponder =
-          node.transponder
-            .trim()
-            .toUpperCase();
-
-        if (transponder === target) {
-
-          const record = {
-            gates: [],
-            laps: []
-          };
-
-          collectTimingsFromObject(
-            node,
-            record
-          );
-
-          return record;
-        }
-      }
-
-      for (const key of Object.keys(node)) {
-
-        const value = node[key];
-
-        if (typeof value === "object") {
-
-          const result =
-            searchForTransponder(
-              value,
-              target
-            );
-
-          if (result) return result;
-        }
-      }
-
-      return null;
-    }
-
-    function collectTimingsFromObject(
-      obj,
-      record
-    ) {
-
-      if (
-        !obj ||
-        typeof obj !== "object"
-      ) return;
-
-      if (Array.isArray(obj)) {
-
-        for (const item of obj) {
-
-          collectTimingsFromObject(
+          scan(
             item,
-            record
+            parentKey
           );
+
         }
 
         return;
       }
 
-      for (const key of Object.keys(obj)) {
 
-        const value = obj[key];
+      if (
+        typeof node !== "object"
+      ) {
 
-        if (typeof value === "object") {
+        return;
+      }
 
-          collectTimingsFromObject(
-            value,
-            record
-          );
 
-          continue;
-        }
+      for (
+        const key of Object.keys(node)
+      ) {
 
-        const keyLower =
+        const value =
+          node[key];
+
+        const lowerKey =
           key.toLowerCase();
 
-        const time =
-          parseToSeconds(value);
 
         if (
-          time === null ||
-          time <= 0
-        ) continue;
-
-        let seconds = time;
-
-        if (
-          seconds >= 1000 &&
-          seconds < 120000
-        ) {
-          seconds = seconds / 1000;
-        }
-
-        if (
-          seconds >= 1.2 &&
-          seconds <= 5 &&
+          typeof value === "string" &&
+          eventIdPattern.test(
+            value.trim()
+          ) &&
           (
-            keyLower.includes("gate") ||
-            keyLower.includes("start")
+            lowerKey.includes("event") ||
+            lowerKey === "id" ||
+            lowerKey.includes("key")
           )
         ) {
 
-          record.gates.push(seconds);
+          eventIds.add(
+            value.trim()
+          );
+
         }
+
 
         if (
-          seconds >= 26 &&
-          seconds <= 90 &&
-          (
-            keyLower.includes("laptime") ||
-            keyLower.includes("finishtime") ||
-            keyLower === "finish" ||
-            keyLower === "lap" ||
-            keyLower === "time"
-          )
+          typeof value === "object"
         ) {
 
-          record.laps.push(seconds);
+          scan(
+            value,
+            key
+          );
+
         }
+
       }
-    }
-  </script>
 
-  <script src="sqorz.js"></script>
+    }
+
+
+    scan(data);
+
+
+    return Array.from(
+      eventIds
+    );
+
+  }
+
+
+  /* =====================================================
+     LOAD CLUB
+  ===================================================== */
+
+  async function loadClubData() {
+
+    const statusEl =
+      document.getElementById(
+        "status"
+      );
+
+
+    const clubCode =
+      document
+        .getElementById(
+          "track-select"
+        )
+        .value;
+
+
+    const riderSelect =
+      document.getElementById(
+        "rider-select"
+      );
+
+
+    document.getElementById(
+      "gate-pb"
+    ).textContent = "--";
+
+
+    document.getElementById(
+      "lap-pb"
+    ).textContent = "--";
+
+
+    if (!clubCode) {
+
+      riderSelect.innerHTML =
+        '<option value="">-- Select a Club First --</option>';
+
+      statusEl.textContent =
+        "Select a club above to load riders...";
+
+      return;
+
+    }
+
+
+    const clubInfo =
+      CLUBS_DATA[clubCode];
+
+
+    if (!clubInfo) {
+
+      statusEl.textContent =
+        "Club not found.";
+
+      return;
+
+    }
+
+
+    riderSelect.innerHTML =
+      '<option value="">-- Loading Riders... --</option>';
+
+
+    statusEl.textContent =
+      `🔎 Finding ${clubInfo.name} events on SQORZ...`;
+
+
+    ridersMap = {};
+
+
+    try {
+
+      const eventIds =
+        await getClubEventIds(
+          clubInfo.org
+        );
+
+
+      if (
+        eventIds.length === 0
+      ) {
+
+        riderSelect.innerHTML =
+          '<option value="">No Events Found</option>';
+
+        statusEl.textContent =
+          `No SQORZ events were found for ${clubInfo.name}.`;
+
+        return;
+
+      }
+
+
+      statusEl.textContent =
+        `Found ${eventIds.length} events. Loading riders...`;
+
+
+      for (
+        const eventId of eventIds
+      ) {
+
+        try {
+
+          const eventData =
+            await fetchSqorzJson(
+              `/json/event/${eventId}`
+            );
+
+
+          deepScanForRiders(
+            eventData
+          );
+
+
+        } catch (error) {
+
+          console.warn(
+            "Could not load event:",
+            eventId,
+            error
+          );
+
+        }
+
+      }
+
+
+      const sortedRiders =
+        Object.keys(
+          ridersMap
+        ).sort();
+
+
+      if (
+        sortedRiders.length === 0
+      ) {
+
+        riderSelect.innerHTML =
+          '<option value="">No Riders Found</option>';
+
+        statusEl.textContent =
+          "No riders were found in the SQORZ events.";
+
+        return;
+
+      }
+
+
+      riderSelect.innerHTML =
+        '<option value="">-- Select a Rider --</option>';
+
+
+      sortedRiders.forEach(
+        rider => {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            rider;
+
+
+          option.textContent =
+            rider;
+
+
+          riderSelect.appendChild(
+            option
+          );
+
+        }
+      );
+
+
+      statusEl.textContent =
+        `✅ Loaded ${sortedRiders.length} riders from ${eventIds.length} events.`;
+
+    } catch (error) {
+
+      console.error(
+        error
+      );
+
+
+      statusEl.textContent =
+        "❌ Could not load the SQORZ club data.";
+
+    }
+
+  }
+
+
+  /* =====================================================
+     RIDER SCANNER
+  ===================================================== */
+
+  function deepScanForRiders(
+    node,
+    currentRiderName = null
+  ) {
+
+    if (!node) return;
+
+
+    if (Array.isArray(node)) {
+
+      for (
+        const item of node
+      ) {
+
+        deepScanForRiders(
+          item,
+          currentRiderName
+        );
+
+      }
+
+      return;
+
+    }
+
+
+    if (
+      typeof node === "object"
+    ) {
+
+      const foundName =
+        extractRiderName(
+          node
+        );
+
+
+      const activeRider =
+        foundName
+          ? formatName(foundName)
+          : currentRiderName;
+
+
+      if (activeRider) {
+
+        if (
+          !ridersMap[activeRider]
+        ) {
+
+          ridersMap[activeRider] = {
+
+            gates: [],
+
+            laps: []
+
+          };
+
+        }
+
+
+        extractTimingsBulletproof(
+          node,
+          ridersMap[activeRider]
+        );
+
+      }
+
+
+      for (
+        const key in node
+      ) {
+
+        if (
+          node.hasOwnProperty(key) &&
+          typeof node[key] === "object"
+        ) {
+
+          deepScanForRiders(
+            node[key],
+            activeRider
+          );
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+  /* =====================================================
+     RIDER NAME
+  ===================================================== */
+
+  function extractRiderName(
+    obj
+  ) {
+
+    if (
+      typeof obj.name === "string" &&
+      isValidName(obj.name)
+    ) {
+
+      return obj.name;
+
+    }
+
+
+    if (
+      typeof obj.riderName === "string" &&
+      isValidName(obj.riderName)
+    ) {
+
+      return obj.riderName;
+
+    }
+
+
+    if (
+      typeof obj.rider === "string" &&
+      isValidName(obj.rider)
+    ) {
+
+      return obj.rider;
+
+    }
+
+
+    if (
+      typeof obj.fullName === "string" &&
+      isValidName(obj.fullName)
+    ) {
+
+      return obj.fullName;
+
+    }
+
+
+    const first =
+      obj.fname ||
+      obj.firstName ||
+      obj.givenName;
+
+
+    const last =
+      obj.lname ||
+      obj.lastName ||
+      obj.familyName;
+
+
+    if (
+      typeof first === "string" &&
+      typeof last === "string"
+    ) {
+
+      const combined =
+        `${first} ${last}`.trim();
+
+
+      if (
+        isValidName(
+          combined
+        )
+      ) {
+
+        return combined;
+
+      }
+
+    }
+
+
+    return null;
+
+  }
+
+
+  /* =====================================================
+     VALID NAME
+  ===================================================== */
+
+  function isValidName(
+    str
+  ) {
+
+    if (!str) return false;
+
+
+    const s =
+      str.trim();
+
+
+    if (
+      s.length < 3
+    ) {
+
+      return false;
+
+    }
+
+
+    const lower =
+      s.toLowerCase();
+
+
+    if (
+      lower.includes("bmx club") ||
+      lower.includes("official result") ||
+      lower.includes("round ") ||
+      lower.includes("class")
+    ) {
+
+      return false;
+
+    }
+
+
+    return true;
+
+  }
+
+
+  /* =====================================================
+     FORMAT NAME
+  ===================================================== */
+
+  function formatName(
+    str
+  ) {
+
+    return str
+      .trim()
+      .toLowerCase()
+      .replace(
+        /\b\w/g,
+        letter =>
+          letter.toUpperCase()
+      );
+
+  }
+
+
+  /* =====================================================
+     TIME PARSER
+  ===================================================== */
+
+  function parseToSeconds(
+    value
+  ) {
+
+    if (
+      typeof value === "number"
+    ) {
+
+      return value;
+
+    }
+
+
+    if (
+      typeof value !== "string"
+    ) {
+
+      return null;
+
+    }
+
+
+    const clean =
+      value.trim();
+
+
+    if (!clean) {
+
+      return null;
+
+    }
+
+
+    if (
+      clean.includes(":")
+    ) {
+
+      const parts =
+        clean.split(":");
+
+
+      if (
+        parts.length === 2
+      ) {
+
+        const minutes =
+          parseFloat(
+            parts[0]
+          );
+
+
+        const seconds =
+          parseFloat(
+            parts[1]
+          );
+
+
+        if (
+          !isNaN(minutes) &&
+          !isNaN(seconds)
+        ) {
+
+          return (
+            minutes * 60
+          ) + seconds;
+
+        }
+
+      }
+
+    }
+
+
+    const number =
+      parseFloat(
+        clean
+      );
+
+
+    return isNaN(number)
+      ? null
+      : number;
+
+  }
+
+
+  /* =====================================================
+     TIMING EXTRACTION
+  ===================================================== */
+
+  function extractTimingsBulletproof(
+    obj,
+    riderRecord
+  ) {
+
+    for (
+      const key in obj
+    ) {
+
+      if (
+        !obj.hasOwnProperty(key)
+      ) continue;
+
+
+      if (
+        key === "name" ||
+        key === "riderName" ||
+        key === "rider" ||
+        key === "fullName"
+      ) continue;
+
+
+      const keyLower =
+        key.toLowerCase();
+
+
+      let value =
+        parseToSeconds(
+          obj[key]
+        );
+
+
+      if (
+        value === null ||
+        value <= 0
+      ) continue;
+
+
+      if (
+        value >= 1000 &&
+        value < 120000
+      ) {
+
+        value =
+          value / 1000;
+
+      }
+
+
+      if (
+        value >= 1.2 &&
+        value <= 5
+      ) {
+
+        riderRecord.gates.push(
+          value
+        );
+
+      }
+
+
+      if (
+        value >= 26 &&
+        value <= 90 &&
+        (
+          keyLower.includes("laptime") ||
+          keyLower.includes("finishtime") ||
+          keyLower === "time" ||
+          keyLower === "finish" ||
+          keyLower === "lap" ||
+          keyLower === "t"
+        )
+      ) {
+
+        riderRecord.laps.push(
+          value
+        );
+
+      }
+
+    }
+
+  }
+
+
+  /* =====================================================
+     CALCULATE PBs
+  ===================================================== */
+
+  function calculateRiderPBs() {
+
+    const rider =
+      document
+        .getElementById(
+          "rider-select"
+        )
+        .value;
+
+
+    if (
+      !rider ||
+      !ridersMap[rider]
+    ) {
+
+      return;
+
+    }
+
+
+    const data =
+      ridersMap[rider];
+
+
+    const bestGate =
+      data.gates.length
+        ? Math.min(
+            ...data.gates
+          )
+        : null;
+
+
+    const bestLap =
+      data.laps.length
+        ? Math.min(
+            ...data.laps
+          )
+        : null;
+
+
+    document.getElementById(
+      "gate-pb"
+    ).textContent =
+      bestGate !== null
+        ? `${bestGate.toFixed(3)}s`
+        : "N/A";
+
+
+    document.getElementById(
+      "lap-pb"
+    ).textContent =
+      bestLap !== null
+        ? `${bestLap.toFixed(3)}s`
+        : "N/A";
+
+
+    document.getElementById(
+      "status"
+    ).textContent =
+      `Showing PBs for ${rider}`;
+
+  }
+
+</script>
+
+
+<!--
+  Keep your existing sqorz.js file.
+  We are not using it for the My SQORZ transponder search.
+-->
+
+<script src="sqorz.js"></script>
 
 </body>
 </html>
