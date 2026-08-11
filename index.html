@@ -129,11 +129,10 @@
     <div class="selector-group">
       <label for="track-select">Select Club / Track:</label>
       <select id="track-select" onchange="loadClubData()">
+        <option value="">-- Choose a Club --</option>
         <option value="rockhampton">Rockhampton BMX</option>
         <option value="harbourcity">Harbour City BMX</option>
         <option value="cairns">Cairns BMX</option>
-        <option value="mackay">Mackay and District BMX</option>
-        <option value="moranbah">Moranbah BMX club</option>
       </select>
 
       <label for="rider-select">Select Rider:</label>
@@ -154,21 +153,18 @@
       </div>
     </div>
 
-    <div id="status">Loading data...</div>
+    <div id="status">Select a club above to start loading riders...</div>
   </div>
 
   <script>
     const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev";
 
-    // --- ADD YOUR SQORZ EVENT IDs HERE FOR EACH CLUB ---
+    // --- MAKE SURE YOUR EVENT IDs ARE IN QUOTES WITH COMMAS ---
     const CLUBS_DATA = {
       "rockhampton": {
         name: "Rockhampton BMX",
         events: [
           "6a06bedb106401f621fe2662"
-          "6a0ff3b66075f1e7948d9259"
-          "6a1929336075f61de2a545ac"
-      
         ]
       },
       "harbourcity": {
@@ -181,30 +177,36 @@
       }
     };
 
-    let ridersMap = {}; // Maps Rider Name -> { gates: [], laps: [] }
+    let ridersMap = {};
 
     async function loadClubData() {
       const statusEl = document.getElementById("status");
       const clubCode = document.getElementById("track-select").value;
       const riderSelect = document.getElementById("rider-select");
 
-      riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
+      // Reset display
       document.getElementById("gate-pb").textContent = "--";
       document.getElementById("lap-pb").textContent = "--";
 
+      if (!clubCode) {
+        riderSelect.innerHTML = '<option value="">-- Select a Club First --</option>';
+        statusEl.textContent = "Select a club above to start loading riders...";
+        return;
+      }
+
       const clubInfo = CLUBS_DATA[clubCode];
       if (!clubInfo || !clubInfo.events || clubInfo.events.length === 0) {
-        statusEl.textContent = `No event IDs added for ${clubCode} yet.`;
+        statusEl.textContent = `No event IDs added for ${clubCode} yet in CLUBS_DATA.`;
         riderSelect.innerHTML = '<option value="">-- No Events Listed --</option>';
         return;
       }
 
+      riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
       statusEl.textContent = `Loading ${clubInfo.events.length} event(s) for ${clubInfo.name}...`;
       ridersMap = {};
 
       try {
         for (let eventId of clubInfo.events) {
-          // Format raw IDs if full URL was pasted by accident
           const cleanEventId = eventId.replace("https://our.sqorz.com/api/v1/event/", "").replace(".json", "").trim();
           const targetUrl = `https://our.sqorz.com/api/v1/event/${cleanEventId}.json`;
           
@@ -219,7 +221,7 @@
 
         if (sortedRiders.length === 0) {
           riderSelect.innerHTML = '<option value="">No Riders Found</option>';
-          statusEl.textContent = "No timing records found in these events.";
+          statusEl.textContent = "Connected to event, but found no timing records.";
           return;
         }
 
@@ -231,7 +233,7 @@
           riderSelect.appendChild(opt);
         });
 
-        // Pre-select Hudson Daley if found
+        // Pre-select Hudson Daley if present
         const hudsonMatch = sortedRiders.find(r => r.toLowerCase().includes("hudson") && r.toLowerCase().includes("daley"));
         if (hudsonMatch) {
           riderSelect.value = hudsonMatch;
@@ -242,20 +244,18 @@
 
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Error loading event data.";
+        statusEl.textContent = "Error loading event data from Sqorz proxy.";
       }
     }
 
     function extractName(obj) {
       if (!obj || typeof obj !== 'object') return null;
 
-      // Check standard fields
       if (typeof obj.name === 'string' && obj.name.trim().length > 2) return obj.name.trim();
       if (typeof obj.riderName === 'string' && obj.riderName.trim().length > 2) return obj.riderName.trim();
       if (typeof obj.rider === 'string' && obj.rider.trim().length > 2) return obj.rider.trim();
       if (typeof obj.fullName === 'string' && obj.fullName.trim().length > 2) return obj.fullName.trim();
 
-      // Check split first / last name fields
       const fname = obj.fname || obj.firstName || obj.givenName;
       const lname = obj.lname || obj.lastName || obj.familyName;
       if (fname && lname && typeof fname === 'string' && typeof lname === 'string') {
@@ -271,20 +271,19 @@
       const name = extractName(obj);
 
       if (name) {
-        // Standardize name title casing
         const cleanName = name.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 
         if (!ridersMap[cleanName]) {
           ridersMap[cleanName] = { gates: [], laps: [] };
         }
 
-        // Gate times (typically 1.0s to 15.0s)
+        // Gate times (1.0s to 15.0s)
         [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1, obj.g].forEach(val => {
           const num = parseFloat(val);
           if (!isNaN(num) && num > 0 && num < 15) ridersMap[cleanName].gates.push(num);
         });
 
-        // Full Lap times (typically >= 15.0s)
+        // Full Lap times (>= 15.0s)
         [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish, obj.t].forEach(val => {
           const num = parseFloat(val);
           if (!isNaN(num) && num >= 15) ridersMap[cleanName].laps.push(num);
@@ -308,8 +307,6 @@
       document.getElementById("gate-pb").textContent = bestGate !== null ? bestGate.toFixed(3) + "s" : "N/A";
       document.getElementById("lap-pb").textContent = bestLap !== null ? bestLap.toFixed(3) + "s" : "N/A";
     }
-
-    window.addEventListener("DOMContentLoaded", loadClubData);
   </script>
 </body>
 </html>
