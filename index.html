@@ -181,6 +181,13 @@
 
     let ridersMap = {};
 
+    async function fetchSqorzJson(urlPath) {
+      const targetUrl = `https://our.sqorz.com${urlPath}`;
+      const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    }
+
     async function loadClubData() {
       const statusEl = document.getElementById("status");
       const clubCode = document.getElementById("track-select").value;
@@ -196,34 +203,39 @@
       }
 
       const clubInfo = CLUBS_DATA[clubCode];
-      if (!clubInfo || !clubInfo.events || clubInfo.events.length === 0) {
-        statusEl.textContent = `No event IDs added for ${clubCode} yet.`;
-        riderSelect.innerHTML = '<option value="">-- No Events Listed --</option>';
-        return;
-      }
-
       riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
-      statusEl.textContent = `Loading ${clubInfo.events.length} event(s)...`;
+      statusEl.textContent = `Connecting to Sqorz for ${clubInfo.name}...`;
       ridersMap = {};
 
       try {
         let successCount = 0;
 
-        for (let eventId of clubInfo.events) {
-          const cleanId = eventId.replace(/[^a-zA-Z0-9]/g, "").trim();
-          if (!cleanId) continue;
+        // Try direct event IDs if listed
+        if (clubInfo && clubInfo.events && clubInfo.events.length > 0) {
+          for (let eventId of clubInfo.events) {
+            const cleanId = eventId.replace(/[^a-zA-Z0-9]/g, "").trim();
+            if (!cleanId) continue;
 
-          const targetUrl = `https://our.sqorz.com/api/v1/event/${cleanId}.json`;
-          
-          try {
-            const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`);
-            if (response.ok) {
-              const eventData = await response.json();
+            try {
+              // Correct Sqorz API endpoint for single event JSON
+              const eventData = await fetchSqorzJson(`/json/event/${cleanId}`);
               deepScanForRiders(eventData);
               successCount++;
+            } catch (e) {
+              console.warn(`Could not fetch event ${cleanId}`, e);
             }
+          }
+        }
+
+        // Fallback: If no event IDs or events came up empty, fetch entire organization feed directly from Sqorz
+        if (Object.keys(ridersMap).length === 0) {
+          try {
+            statusEl.textContent = `Fetching club feed for ${clubCode}...`;
+            const orgData = await fetchSqorzJson(`/json/org/${clubCode}`);
+            deepScanForRiders(orgData);
+            if (Object.keys(ridersMap).length > 0) successCount = 1;
           } catch (e) {
-            console.warn(`Could not fetch event ${cleanId}`, e);
+            console.warn(`Could not fetch org feed for ${clubCode}`, e);
           }
         }
 
@@ -231,7 +243,7 @@
 
         if (sortedRiders.length === 0) {
           riderSelect.innerHTML = '<option value="">No Riders Found</option>';
-          statusEl.textContent = "Scanned events but found no rider entries.";
+          statusEl.textContent = "Could not find rider entries. Check event IDs or network proxy.";
           return;
         }
 
@@ -243,22 +255,15 @@
           riderSelect.appendChild(opt);
         });
 
-        // Pre-select Hudson Daley if found
-        const hudsonMatch = sortedRiders.find(r => r.toLowerCase().includes("hudson") && r.toLowerCase().includes("daley"));
-        if (hudsonMatch) {
-          riderSelect.value = hudsonMatch;
-          calculateRiderPBs();
-        }
-
-        statusEl.textContent = `Loaded ${sortedRiders.length} riders from ${successCount} event(s)!`;
+        statusEl.textContent = `Loaded ${sortedRiders.length} riders!`;
 
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Error fetching Sqorz data.";
+        statusEl.textContent = "Error fetching data from Sqorz.";
       }
     }
 
-    // Advanced Deep Object/Array Scanner
+    // Universal Object & Array Traversal Scanner
     function deepScanForRiders(node) {
       if (!node) return;
 
@@ -270,19 +275,15 @@
       }
 
       if (typeof node === 'object') {
-        // Try extracting rider name from object
         const name = extractRiderName(node);
         if (name) {
           const cleanName = formatName(name);
           if (!ridersMap[cleanName]) {
             ridersMap[cleanName] = { gates: [], laps: [] };
           }
-
-          // Extract timings attached to this rider object
           extractTimings(node, ridersMap[cleanName]);
         }
 
-        // Recursively check child fields/objects
         for (let key in node) {
           if (node.hasOwnProperty(key) && typeof node[key] === 'object') {
             deepScanForRiders(node[key]);
@@ -310,12 +311,13 @@
     function isValidName(str) {
       if (!str) return false;
       const s = str.trim();
-      // Ignore common non-rider strings
-      if (s.length < 3) return false;
-      if (s.toLowerCase().includes("bmx")) return false;
-      if (s.toLowerCase().includes("club")) return false;
-      if (s.toLowerCase().includes("round")) return false;
-      if (s.toLowerCase().includes("moto")) return false;
+      if (s.length < 2) return false;
+      
+      const lower = s.toLowerCase();
+      // Only block obvious event headings
+      if (lower.includes("bmx club") || lower.includes("official result") || lower.includes("round ")) {
+        return false;
+      }
       return true;
     }
 
@@ -324,7 +326,7 @@
     }
 
     function extractTimings(obj, riderRecord) {
-      // Gate split fields (between 1s and 15s)
+      // Collect gate times (1.0s to 15.0s)
       const gateFields = [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1, obj.g, obj.split_1];
       gateFields.forEach(val => {
         const n = parseFloat(val);
@@ -333,7 +335,7 @@
         }
       });
 
-      // Full lap fields (>= 15s)
+      // Collect full lap times (15.0s to 120.0s)
       const lapFields = [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish, obj.t, obj.total];
       lapFields.forEach(val => {
         const n = parseFloat(val);
