@@ -96,7 +96,7 @@
       <div class="controls">
         <div>
           <label for="club">Select Club / Track</label>
-          <select id="club" onchange="startClubScan()">
+          <select id="club">
             <option value="">-- Choose a Club --</option>
             <option value="rockybmx">Rockhampton BMX</option>
             <option value="hcbmx">Harbour City BMX</option>
@@ -185,7 +185,6 @@ const CLUBS = {
 };
 
 const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev?url=";
-const MARCH_2026_CUTOFF = new Date("2026-03-01T00:00:00Z");
 
 const clubEl = document.getElementById("club");
 const riderEl = document.getElementById("rider");
@@ -204,6 +203,8 @@ const monthlyTableBody = document.querySelector("#monthlyTable tbody");
 let ridersData = {};
 let abortController = null;
 let isScanning = false;
+
+clubEl.addEventListener("change", startClubScan);
 
 async function fetchJsonWithAbort(url, signal) {
   let finalUrl = url;
@@ -230,7 +231,6 @@ function collectEventIdsFromOrgJson(obj) {
 function extractRiderNameFromNode(node) {
   if (!node || typeof node !== "object") return null;
 
-  // 1. Check if both first and last name fields exist on the object
   const first = node.firstName || node.fname || node.givenName;
   const last = node.lastName || node.lname || node.familyName;
   if (first && last && typeof first === "string" && typeof last === "string") {
@@ -238,7 +238,6 @@ function extractRiderNameFromNode(node) {
     if (combined.length > 2) return formatName(combined);
   }
 
-  // 2. Check full name strings
   const candidates = ["name", "riderName", "rider", "fullName"];
   for (const key of candidates) {
     if (node[key] && typeof node[key] === "string") {
@@ -256,7 +255,6 @@ function extractRiderNameFromNode(node) {
       }
     }
   }
-
   return null;
 }
 
@@ -307,45 +305,20 @@ function extractTimingsFromNode(node) {
   return { gates, laps };
 }
 
+function isJanOrFeb2026(d) {
+  if (!d) return false;
+  const year = d.getFullYear();
+  const month = d.getMonth(); // 0 = Jan, 1 = Feb
+  return year === 2026 && (month === 0 || month === 1);
+}
+
 function deepScanEventForRiders(eventJson, eventDate, ridersMap) {
+  const ignoreTimes = isJanOrFeb2026(eventDate);
+
   function scan(node, currentName = null) {
     if (!node) return;
     if (Array.isArray(node)) { node.forEach(item => scan(item, currentName)); return; }
     if (typeof node === "object") {
       const foundName = extractRiderNameFromNode(node);
       const activeName = foundName ? foundName : currentName;
-      const { gates, laps } = extractTimingsFromNode(node);
-      if (activeName && (gates.length || laps.length)) {
-        if (!ridersMap[activeName]) ridersMap[activeName] = [];
-        if (gates.length) gates.forEach(g => ridersMap[activeName].push({ date: eventDate, gate: g, lap: null }));
-        if (laps.length) laps.forEach(l => ridersMap[activeName].push({ date: eventDate, gate: null, lap: l }));
-      }
-      for (const k of Object.keys(node)) {
-        if (typeof node[k] === "object") scan(node[k], activeName);
-      }
-    }
-  }
-  scan(eventJson, null);
-}
-
-function showOverlay(text, sub) {
-  overlayText.textContent = text || "Working...";
-  overlaySub.textContent = sub || "";
-  progressBar.style.width = "0%";
-  overlay.classList.add("show");
-  overlay.setAttribute("aria-hidden", "false");
-}
-
-function hideOverlay() {
-  overlay.classList.remove("show");
-  overlay.setAttribute("aria-hidden", "true");
-}
-
-function setProgress(percent, sub) {
-  progressBar.style.width = `${percent}%`;
-  overlaySub.textContent = sub || "";
-}
-
-async function startClubScan() {
-  const clubCode = clubEl.value;
-  riderEl.innerHTML = '<option value
+      const { gates, laps } = extractTimings
