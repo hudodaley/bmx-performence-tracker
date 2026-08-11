@@ -133,8 +133,6 @@
         <option value="rockhampton">Rockhampton BMX</option>
         <option value="harbourcity">Harbour City BMX</option>
         <option value="cairns">Cairns BMX</option>
-        <option value="mackay">Mackay and District BMX</option> 
-        <option value="moranbah">Moranbah BMX club</option>
       </select>
 
       <label for="rider-select">Select Rider:</label>
@@ -161,13 +159,13 @@
   <script>
     const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev";
 
-    // --- MAKE SURE YOUR EVENT IDs ARE IN QUOTES WITH COMMAS ---
+    // --- CLUBS DATA WITH COMMAS PROPERLY ADDED ---
     const CLUBS_DATA = {
       "rockhampton": {
         name: "Rockhampton BMX",
         events: [
-          "6a06bedb106401f621fe2662"
-          "6a0ff3b66075f1e7948d9259" 
+          "6a06bedb106401f621fe2662",
+          "6a0ff3b66075f1e7948d9259",
           "6a1929336075f61de2a545ac"
         ]
       },
@@ -188,7 +186,6 @@
       const clubCode = document.getElementById("track-select").value;
       const riderSelect = document.getElementById("rider-select");
 
-      // Reset display
       document.getElementById("gate-pb").textContent = "--";
       document.getElementById("lap-pb").textContent = "--";
 
@@ -200,24 +197,34 @@
 
       const clubInfo = CLUBS_DATA[clubCode];
       if (!clubInfo || !clubInfo.events || clubInfo.events.length === 0) {
-        statusEl.textContent = `No event IDs added for ${clubCode} yet in CLUBS_DATA.`;
+        statusEl.textContent = `No event IDs added for ${clubCode} yet.`;
         riderSelect.innerHTML = '<option value="">-- No Events Listed --</option>';
         return;
       }
 
       riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
-      statusEl.textContent = `Loading ${clubInfo.events.length} event(s) for ${clubInfo.name}...`;
+      statusEl.textContent = `Loading ${clubInfo.events.length} event(s)...`;
       ridersMap = {};
 
       try {
+        let successCount = 0;
+
         for (let eventId of clubInfo.events) {
-          const cleanEventId = eventId.replace("https://our.sqorz.com/api/v1/event/", "").replace(".json", "").trim();
-          const targetUrl = `https://our.sqorz.com/api/v1/event/${cleanEventId}.json`;
+          // Clean ID in case user pasted full URLs or extra spaces
+          const cleanId = eventId.replace(/[^a-zA-Z0-9]/g, "").trim();
+          if (!cleanId) continue;
+
+          const targetUrl = `https://our.sqorz.com/api/v1/event/${cleanId}.json`;
           
-          const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`);
-          if (response.ok) {
-            const eventData = await response.json();
-            scanObjectForRiders(eventData);
+          try {
+            const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(targetUrl)}`);
+            if (response.ok) {
+              const eventData = await response.json();
+              scanObjectForRiders(eventData);
+              successCount++;
+            }
+          } catch (e) {
+            console.warn(`Could not load event ${cleanId}`, e);
           }
         }
 
@@ -225,7 +232,7 @@
 
         if (sortedRiders.length === 0) {
           riderSelect.innerHTML = '<option value="">No Riders Found</option>';
-          statusEl.textContent = "Connected to event, but found no timing records.";
+          statusEl.textContent = "Scanned events but found no rider entries.";
           return;
         }
 
@@ -237,18 +244,18 @@
           riderSelect.appendChild(opt);
         });
 
-        // Pre-select Hudson Daley if present
+        // Pre-select Hudson Daley automatically if in the event list
         const hudsonMatch = sortedRiders.find(r => r.toLowerCase().includes("hudson") && r.toLowerCase().includes("daley"));
         if (hudsonMatch) {
           riderSelect.value = hudsonMatch;
           calculateRiderPBs();
         }
 
-        statusEl.textContent = `Loaded ${sortedRiders.length} riders across ${clubInfo.events.length} event(s)!`;
+        statusEl.textContent = `Successfully loaded ${sortedRiders.length} riders from ${successCount} event(s)!`;
 
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Error loading event data from Sqorz proxy.";
+        statusEl.textContent = "Error fetching Sqorz data. Check network or proxy worker.";
       }
     }
 
@@ -275,19 +282,20 @@
       const name = extractName(obj);
 
       if (name) {
+        // Standardize Title Case name (e.g. "HUDSON DALEY" -> "Hudson Daley")
         const cleanName = name.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 
         if (!ridersMap[cleanName]) {
           ridersMap[cleanName] = { gates: [], laps: [] };
         }
 
-        // Gate times (1.0s to 15.0s)
+        // Gate splits (1.0s to 15.0s)
         [obj.gate, obj.gateTime, obj.split1, obj.split, obj.s1, obj.g].forEach(val => {
           const num = parseFloat(val);
           if (!isNaN(num) && num > 0 && num < 15) ridersMap[cleanName].gates.push(num);
         });
 
-        // Full Lap times (>= 15.0s)
+        // Full Laps (>= 15.0s)
         [obj.time, obj.lapTime, obj.totalTime, obj.result, obj.finish, obj.t].forEach(val => {
           const num = parseFloat(val);
           if (!isNaN(num) && num >= 15) ridersMap[cleanName].laps.push(num);
