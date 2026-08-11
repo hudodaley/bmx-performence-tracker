@@ -478,4 +478,323 @@
       return;
     }
 
-    const clubInfo = CLUBS_DATA
+    const clubInfo = CLUBS_DATA[clubCode];
+    if (!clubInfo) {
+      statusEl.textContent = "Club not found.";
+      return;
+    }
+
+    riderSelect.innerHTML = '<option value="">-- Loading Riders... --</option>';
+    statusEl.textContent = `🔎 Finding ${clubInfo.name} events from 2026 onwards...`;
+
+    ridersMap = {};
+
+    try {
+      const eventIds = await getFilteredClubEvents(clubInfo.org);
+
+      if (eventIds.length === 0) {
+        riderSelect.innerHTML = '<option value="">No Events Found</option>';
+        statusEl.textContent = `No 2026+ race events found for ${clubInfo.name}.`;
+        return;
+      }
+
+      statusEl.textContent = `Found ${eventIds.length} race events. Scanning rider timings...`;
+
+      for (const eventId of eventIds) {
+        try {
+          const eventData = await fetchSqorzJson(`/json/event/${eventId}`);
+          const eventDate = new Date(eventData.startDate || eventData.date || Date.now());
+
+          if (eventDate >= CUTOFF_DATE) {
+            deepScanForRiders(eventData);
+          }
+        } catch (error) {
+          console.warn("Could not load event:", eventId, error);
+        }
+      }
+
+      const sortedRiders = Object.keys(ridersMap).sort();
+
+      if (sortedRiders.length === 0) {
+        riderSelect.innerHTML = '<option value="">No Riders Found</option>';
+        statusEl.textContent = "No riders found in 2026 race events.";
+        return;
+      }
+
+      riderSelect.innerHTML = '<option value="">-- Select a Rider --</option>';
+
+      sortedRiders.forEach(rider => {
+        const option = document.createElement("option");
+        option.value = rider;
+        option.textContent = rider;
+        riderSelect.appendChild(option);
+      });
+
+      statusEl.textContent = `✅ Loaded ${sortedRiders.length} riders from ${eventIds.length} events!`;
+
+    } catch (error) {
+      console.error(error);
+      statusEl.textContent = "❌ Could not load the SQORZ club data.";
+    }
+  }
+
+
+  /* =====================================================
+     RIDER SCANNER & TIME UTILITIES
+  ===================================================== */
+
+  function deepScanForRiders(node, currentRiderName = null) {
+    if (!node) return;
+
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        deepScanForRiders(item, currentRiderName);
+      }
+      return;
+    }
+
+    if (typeof node === "object") {
+      const foundName = extractRiderName(node);
+      const activeRider = foundName ? formatName(foundName) : currentRiderName;
+
+      if (activeRider) {
+        if (!ridersMap[activeRider]) {
+          ridersMap[activeRider] = { gates: [], laps: [] };
+        }
+        extractTimings(node, ridersMap[activeRider]);
+      }
+
+      for (const key in node) {
+        if (node.hasOwnProperty(key) && typeof node[key] === "object") {
+          deepScanForRiders(node[key], activeRider);
+        }
+      }
+    }
+  }
+
+  function extractRiderName(obj) {
+    if (typeof obj.name === "string" && isValidName(obj.name)) return obj.name;
+    if (typeof obj.riderName === "string" && isValidName(obj.riderName)) return obj.riderName;
+    if (typeof obj.rider === "string" && isValidName(obj.rider)) return obj.rider;
+    if (typeof obj.fullName === "string" && isValidName(obj.fullName)) return obj.fullName;
+
+    const first = obj.fname || obj.firstName || obj.givenName;
+    const last = obj.lname || obj.lastName || obj.familyName;
+
+    if (typeof first === "string" && typeof last === "string") {
+      const combined = `${first} ${last}`.trim();
+      if (isValidName(combined)) return combined;
+    }
+
+    return null;
+  }
+
+  function isValidName(str) {
+    if (!str) return false;
+    const s = str.trim();
+    if (s.length < 3) return false;
+
+    const lower = s.toLowerCase();
+    if (
+      lower.includes("bmx club") ||
+      lower.includes("official result") ||
+      lower.includes("round ") ||
+      lower.includes("class")
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  function formatName(str) {
+    return str
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, letter => letter.toUpperCase());
+  }
+
+  function parseToSeconds(value) {
+    if (typeof value === "number") return value;
+    if (typeof value !== "string") return null;
+
+    const clean = value.trim();
+    if (!clean) return null;
+
+    if (clean.includes(":")) {
+      const parts = clean.split(":");
+      if (parts.length === 2) {
+        const minutes = parseFloat(parts[0]);
+        const seconds = parseFloat(parts[1]);
+        if (!isNaN(minutes) && !isNaN(seconds)) {
+          return (minutes * 60) + seconds;
+        }
+      }
+    }
+
+    const number = parseFloat(clean);
+    return isNaN(number) ? null : number;
+  }
+
+  function extractTimings(obj, riderRecord) {
+    for (const key in obj) {
+      if (!obj.hasOwnProperty(key)) continue;
+
+      if (
+        key === "name" ||
+        key === "riderName" ||
+        key === "rider" ||
+        key === "fullName"
+      ) continue;
+
+      const keyLower = key.toLowerCase();
+      let value = parseToSeconds(obj[key]);
+
+      if (value === null || value <= 0) continue;
+
+      if (value >= 1000 && value < 120000) {
+        value = value / 1000;
+      }
+
+      if (value >= 1.2 && value <= 5) {
+        riderRecord.gates.push(value);
+      }
+
+      if (
+        value >= 26 &&
+        value <= 90 &&
+        (
+          keyLower.includes("laptime") ||
+          keyLower.includes("finishtime") ||
+          keyLower === "time" ||
+          keyLower === "finish" ||
+          keyLower === "lap" ||
+          keyLower === "t"
+        )
+      ) {
+        riderRecord.laps.push(value);
+      }
+    }
+  }
+
+
+  /* =====================================================
+     CALCULATE PBs (OUR SQORZ TAB)
+  ===================================================== */
+
+  function calculateRiderPBs() {
+    const rider = document.getElementById("rider-select").value;
+    if (!rider || !ridersMap[rider]) return;
+
+    const data = ridersMap[rider];
+    const bestGate = data.gates.length ? Math.min(...data.gates) : null;
+    const bestLap = data.laps.length ? Math.min(...data.laps) : null;
+
+    document.getElementById("gate-pb").textContent =
+      bestGate !== null ? `${bestGate.toFixed(3)}s` : "N/A";
+
+    document.getElementById("lap-pb").textContent =
+      bestLap !== null ? `${bestLap.toFixed(3)}s` : "N/A";
+
+    document.getElementById("status").textContent = `Showing PBs for ${rider}`;
+  }
+
+
+  /* =====================================================
+     MY SQORZ TRANSPONDER PB SEARCH
+  ===================================================== */
+
+  document.getElementById("my-sqorz-search-btn").addEventListener("click", searchMyTransponderPBs);
+
+  async function searchMyTransponderPBs() {
+    const clubCode = document.getElementById("my-track-select").value;
+    const transponderInput = document.getElementById("my-transponder").value.trim().toUpperCase();
+    const statusEl = document.getElementById("my-status");
+
+    const gatePbEl = document.getElementById("my-gate-pb");
+    const lapPbEl = document.getElementById("my-lap-pb");
+
+    gatePbEl.textContent = "--";
+    lapPbEl.textContent = "--";
+
+    if (!clubCode) {
+      alert("Please select a club/track first.");
+      return;
+    }
+
+    if (!transponderInput) {
+      alert("Please enter a transponder number.");
+      return;
+    }
+
+    const clubInfo = CLUBS_DATA[clubCode];
+    statusEl.textContent = `🔎 Searching ${clubInfo.name} race data for transponder ${transponderInput}...`;
+
+    const gates = [];
+    const laps = [];
+
+    try {
+      const eventIds = await getFilteredClubEvents(clubInfo.org);
+
+      if (eventIds.length === 0) {
+        statusEl.textContent = `No 2026+ race events found for ${clubInfo.name}.`;
+        return;
+      }
+
+      for (const eventId of eventIds) {
+        try {
+          const eventData = await fetchSqorzJson(`/json/event/${eventId}`);
+
+          function scanForTransponder(node) {
+            if (!node) return;
+
+            if (Array.isArray(node)) {
+              for (const item of node) scanForTransponder(item);
+              return;
+            }
+
+            if (typeof node === "object") {
+              const nodeStr = JSON.stringify(node).toUpperCase();
+
+              if (nodeStr.includes(transponderInput)) {
+                const tempRecord = { gates: [], laps: [] };
+                extractTimings(node, tempRecord);
+
+                gates.push(...tempRecord.gates);
+                laps.push(...tempRecord.laps);
+              }
+
+              for (const k in node) {
+                if (typeof node[k] === "object") scanForTransponder(node[k]);
+              }
+            }
+          }
+
+          scanForTransponder(eventData);
+
+        } catch (e) {
+          console.warn("Error scanning event for transponder", e);
+        }
+      }
+
+      const bestGate = gates.length ? Math.min(...gates) : null;
+      const bestLap = laps.length ? Math.min(...laps) : null;
+
+      gatePbEl.textContent = bestGate !== null ? `${bestGate.toFixed(3)}s` : "N/A";
+      lapPbEl.textContent = bestLap !== null ? `${bestLap.toFixed(3)}s` : "N/A";
+
+      if (bestGate === null && bestLap === null) {
+        statusEl.textContent = `No results found for Transponder #${transponderInput} at ${clubInfo.name}.`;
+      } else {
+        statusEl.textContent = `✅ Calculated PBs for Transponder #${transponderInput}!`;
+      }
+
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "❌ Error reading transponder data from SQORZ.";
+    }
+  }
+
+</script>
+
+</body>
+</html>
