@@ -1,176 +1,395 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Your BMX PB's</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your BMX PB's</title>
 
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      background: #000;
-      color: #CCFF00;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 16px;
-      min-height: 100vh;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
+<style>
+* { box-sizing:border-box; }
 
-    .page-wrapper { display:flex; justify-content:center; }
-    .container {
-      width:100%;
-      max-width:420px;
-      background:#111;
-      border:2px solid #CCFF00;
-      border-radius:14px;
-      padding:18px;
-      box-shadow:0 0 30px rgba(204,255,0,0.06);
-      margin-bottom:20px;
-    }
+body {
+  background:#000;
+  color:#CCFF00;
+  font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+  margin:0;
+  padding:16px;
+  min-height:100vh;
+}
 
-    h1 { margin:0; text-align:center; font-size:26px; text-transform:uppercase; color:#CCFF00; }
-    .subtitle { text-align:center; font-size:13px; margin-top:8px; margin-bottom:4px; color:#CCFF00; }
-    .subtitle-small { text-align:center; font-size:11px; opacity:0.9; margin-bottom:14px; color:#CCFF00; }
+.page-wrapper {
+  display:flex;
+  justify-content:center;
+}
 
-    .controls { display:flex; gap:10px; flex-direction:column; margin-bottom:12px; }
-    .row { display:flex; gap:10px; }
+.container {
+  width:100%;
+  max-width:420px;
+  background:#111;
+  border:2px solid #CCFF00;
+  border-radius:14px;
+  padding:18px;
+  box-shadow:0 0 30px rgba(204,255,0,0.06);
+  margin-bottom:20px;
+}
 
-    label { display:block; font-size:11px; font-weight:700; text-transform:uppercase; margin-bottom:6px; color:#CCFF00; }
-    select, button {
-      width:100%; padding:10px 12px; border-radius:10px; border:2px solid #CCFF00;
-      background:#1a1a1a; color:#CCFF00; font-weight:700; font-size:14px;
-    }
-    button { cursor:pointer; background:#CCFF00; color:#000; border:none; }
-    button.secondary { background:#222; color:#CCFF00; border:2px solid #333; }
-    button:active { transform:scale(0.99); }
+h1 {
+  margin:0;
+  text-align:center;
+  font-size:26px;
+  text-transform:uppercase;
+  color:#CCFF00;
+}
 
-    .cards { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
-    .card {
-      background:#1a1a1a; border-radius:10px; padding:12px 14px; flex:1 1 160px;
-      display:flex; flex-direction:column; gap:6px; border:1px solid #333;
-    }
-    .card-title { font-size:12px; text-transform:uppercase; color:#CCFF00; font-weight:700; }
-    .card-value { font-size:20px; font-weight:900; color:#CCFF00; }
+.subtitle {
+  text-align:center;
+  font-size:13px;
+  margin-top:8px;
+  margin-bottom:4px;
+}
 
-    #status { margin-top:12px; text-align:center; font-weight:700; font-size:13px; color:#CCFF00; }
+.subtitle-small {
+  text-align:center;
+  font-size:11px;
+  opacity:.9;
+  margin-bottom:14px;
+}
 
-    .overlay {
-      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,0.6); z-index:9999; padding:12px;
-    }
-    .overlay.show { display:flex; }
-    .spinner-box {
-      background:#0f0f0f; border:2px solid #CCFF00; padding:14px; border-radius:12px; text-align:center;
-      width:360px; max-width:100%;
-    }
-    .spinner {
-      width:48px; height:48px; margin:0 auto 10px; border-radius:50%;
-      border:6px solid rgba(204,255,0,0.12); border-top-color:#CCFF00; animation:spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform:rotate(360deg); } }
+.controls {
+  display:flex;
+  gap:10px;
+  flex-direction:column;
+  margin-bottom:12px;
+}
 
-    .progress-line { height:8px; background:#222; border-radius:6px; overflow:hidden; margin-top:10px; }
-    .progress-bar { height:100%; background:#CCFF00; width:0%; transition:width 200ms linear; }
+.row {
+  display:flex;
+  gap:10px;
+}
 
-    .pb-table { margin-top:14px; width:100%; border-collapse:collapse; color:#CCFF00; font-weight:700; }
-    .pb-table th, .pb-table td { padding:8px 10px; border-bottom:1px solid #222; text-align:center; font-size:13px; }
-    .pb-table th { font-size:11px; text-transform:uppercase; }
+label {
+  display:block;
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
 
-    .pb-note { margin-top:8px; font-size:12px; color:#bfbfbf; text-align:center; }
+select,
+button {
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:2px solid #CCFF00;
+  background:#1a1a1a;
+  color:#CCFF00;
+  font-weight:700;
+  font-size:14px;
+}
 
-    @media (max-width:420px) {
-      .row { flex-direction:column; }
-      .cards { flex-direction:column; }
-    }
-  </style>
+button {
+  cursor:pointer;
+  background:#CCFF00;
+  color:#000;
+  border:none;
+}
+
+button.secondary {
+  background:#222;
+  color:#CCFF00;
+  border:2px solid #333;
+}
+
+button:active {
+  transform:scale(.99);
+}
+
+.cards {
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+.card {
+  background:#1a1a1a;
+  border-radius:10px;
+  padding:12px 14px;
+  flex:1 1 160px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  border:1px solid #333;
+}
+
+.card-title {
+  font-size:12px;
+  text-transform:uppercase;
+  font-weight:700;
+}
+
+.card-value {
+  font-size:20px;
+  font-weight:900;
+}
+
+#status {
+  margin-top:12px;
+  text-align:center;
+  font-weight:700;
+  font-size:13px;
+}
+
+.overlay {
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.6);
+  z-index:9999;
+  padding:12px;
+}
+
+.overlay.show {
+  display:flex;
+}
+
+.spinner-box {
+  background:#0f0f0f;
+  border:2px solid #CCFF00;
+  padding:14px;
+  border-radius:12px;
+  text-align:center;
+  width:360px;
+  max-width:100%;
+}
+
+.spinner {
+  width:48px;
+  height:48px;
+  margin:0 auto 10px;
+  border-radius:50%;
+  border:6px solid rgba(204,255,0,.12);
+  border-top-color:#CCFF00;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform:rotate(360deg); }
+}
+
+.progress-line {
+  height:8px;
+  background:#222;
+  border-radius:6px;
+  overflow:hidden;
+  margin-top:10px;
+}
+
+.progress-bar {
+  height:100%;
+  background:#CCFF00;
+  width:0%;
+  transition:width 200ms linear;
+}
+
+.pb-table {
+  margin-top:14px;
+  width:100%;
+  border-collapse:collapse;
+  color:#CCFF00;
+  font-weight:700;
+}
+
+.pb-table th,
+.pb-table td {
+  padding:8px 6px;
+  border-bottom:1px solid #222;
+  text-align:center;
+  font-size:13px;
+}
+
+.pb-table th {
+  font-size:11px;
+  text-transform:uppercase;
+}
+
+.pb-note {
+  margin-top:8px;
+  font-size:12px;
+  color:#bfbfbf;
+  text-align:center;
+}
+
+@media(max-width:420px) {
+  .row {
+    flex-direction:column;
+  }
+
+  .cards {
+    flex-direction:column;
+  }
+}
+</style>
 </head>
+
 <body>
-  <div class="page-wrapper">
-    <div class="container">
-      <h1>Your BMX PB's</h1>
-      <div class="subtitle">Don't go searching for your PB's for hours — go to Your BMX PB's</div>
-      <div class="subtitle-small">( MAY TAKE A WHILE TO LOAD, LOTS OF DATA TO GO THROUGH! )</div>
 
-      <div class="controls">
-        <div>
-          <label for="club">Select Club / Track</label>
-          <select id="club" onchange="startClubScan()">
-            <option value="">-- Choose a Club --</option>
-            <option value="rockybmx">Rockhampton BMX</option>
-            <option value="hcbmx">Harbour City BMX</option>
-            <option value="cairnsbmx">Cairns BMX</option>
-            <option value="moranbah">Moranbah BMX Club</option>
-            <option value="bmxch">Central Highlands BMX Club</option>
-          </select>
-        </div>
+<div class="page-wrapper">
+<div class="container">
 
-        <div>
-          <label for="rider">Select Rider</label>
-          <select id="rider" disabled>
-            <option value="">-- Select a Club First --</option>
-          </select>
-        </div>
+<h1>Your BMX PB's</h1>
 
-        <div class="row" style="gap:8px;">
-          <div style="flex:1;">
-            <button id="cancelBtn" class="secondary" disabled>Cancel Scan</button>
-          </div>
-          <div style="width:120px;">
-            <button id="clearBtn" class="secondary">Clear</button>
-          </div>
-        </div>
-      </div>
+<div class="subtitle">
+Don't go searching for your PB's for hours — go to Your BMX PB's
+</div>
 
-      <div class="cards">
-        <div class="card">
-          <div class="card-title">Overall Gate PB</div>
-          <div class="card-value" id="gatePB">--</div>
-        </div>
-        <div class="card">
-          <div class="card-title">Overall Whole Lap PB</div>
-          <div class="card-value" id="lapPB">--</div>
-        </div>
-      </div>
+<div class="subtitle-small">
+(MAY TAKE A WHILE TO LOAD, LOTS OF DATA TO GO THROUGH!)
+</div>
 
-      <div id="status">Select a club above to load riders...</div>
+<div class="controls">
 
-      <div id="monthlySection" style="display:none;">
-        <table class="pb-table" id="monthlyTable">
-          <thead>
-            <tr><th>Month</th><th>Best Gate PB</th><th>Best Lap PB</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div class="pb-note">Monthly fastest times automatically extracted per event month.</div>
-      </div>
-    </div>
-  </div>
+<div>
+<label for="club">Select Club / Track</label>
 
-  <div class="overlay" id="overlay" aria-hidden="true">
-    <div class="spinner-box" role="status" aria-live="polite">
-      <div class="spinner" aria-hidden="true"></div>
-      <div id="overlayText" style="font-weight:800; color:#CCFF00;">Preparing...</div>
-      <div class="progress-line" style="margin-top:12px;">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-      <div id="overlaySub" style="margin-top:8px; font-size:12px; color:#bfbfbf;"></div>
-    </div>
-  </div>
+<select id="club" onchange="startClubScan()">
+<option value="">-- Choose a Club --</option>
+<option value="rockybmx">Rockhampton BMX</option>
+<option value="hcbmx">Harbour City BMX</option>
+<option value="cairnsbmx">Cairns BMX</option>
+<option value="moranbah">Moranbah BMX Club</option>
+<option value="bmxch">Central Highlands BMX Club</option>
+</select>
+</div>
+
+<div>
+<label for="rider">Select Rider</label>
+
+<select id="rider" disabled>
+<option value="">-- Select a Club First --</option>
+</select>
+</div>
+
+<div class="row">
+
+<div style="flex:1;">
+<button id="cancelBtn" class="secondary" disabled>
+Cancel Scan
+</button>
+</div>
+
+<div style="width:120px;">
+<button id="clearBtn" class="secondary">
+Clear
+</button>
+</div>
+
+</div>
+
+</div>
+
+<div class="cards">
+
+<div class="card">
+<div class="card-title">Overall Gate PB</div>
+<div class="card-value" id="gatePB">--</div>
+</div>
+
+<div class="card">
+<div class="card-title">Overall Whole Lap PB</div>
+<div class="card-value" id="lapPB">--</div>
+</div>
+
+</div>
+
+<div id="status">
+Select a club above to load riders...
+</div>
+
+<div id="monthlySection" style="display:none;">
+
+<table class="pb-table" id="monthlyTable">
+
+<thead>
+<tr>
+<th>Month</th>
+<th>Best Gate PB</th>
+<th>Best Lap PB</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+<div class="pb-note">
+Fastest genuine transponder timing found for each month.
+</div>
+
+</div>
+
+</div>
+</div>
+
+<div class="overlay" id="overlay">
+
+<div class="spinner-box">
+
+<div class="spinner"></div>
+
+<div id="overlayText"
+style="font-weight:800;color:#CCFF00;">
+Preparing...
+</div>
+
+<div class="progress-line">
+<div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div id="overlaySub"
+style="margin-top:8px;font-size:12px;color:#bfbfbf;">
+</div>
+
+</div>
+</div>
 
 <script>
+
+/* =========================================================
+   CLUB SETTINGS
+   ========================================================= */
+
 const CLUBS = {
+
   rockybmx: {
-    name: "Rockhampton BMX",
-    fallbackEvents: ["6a06bedb106401f621fe2662", "6a0ff3b66075f1e7948d9259", "6a1929336075f61de2a545ac"]
+    name:"Rockhampton BMX",
+    fallbackEvents:[
+      "6a06bedb106401f621fe2662",
+      "6a0ff3b66075f1e7948d9259",
+      "6a1929336075f61de2a545ac"
+    ]
   },
-  hcbmx: { name: "Harbour City BMX", fallbackEvents: [] },
-  cairnsbmx: { name: "Cairns BMX", fallbackEvents: [] },
-  moranbah: { name: "Moranbah BMX Club", fallbackEvents: [] },
+
+  hcbmx: {
+    name:"Harbour City BMX",
+    fallbackEvents:[]
+  },
+
+  cairnsbmx: {
+    name:"Cairns BMX",
+    fallbackEvents:[]
+  },
+
+  moranbah: {
+    name:"Moranbah BMX Club",
+    fallbackEvents:[]
+  },
+
   bmxch: {
-    name: "Central Highlands BMX Club",
-    fallbackEvents: [
+    name:"Central Highlands BMX Club",
+    fallbackEvents:[
       "6a6c4de482c75fab486118dc",
       "6a3e2d20cf7ed063f833a09e",
       "6a2bad04963c283595b62682",
@@ -182,420 +401,1330 @@ const CLUBS = {
       "69c4e23f0bc99bebb1dc78b9"
     ]
   }
+
 };
 
-const PROXY_URL = "https://sqorz-proxy.hudsondaley55.workers.dev?url=";
-const MARCH_2026_CUTOFF = new Date("2026-03-01T00:00:00Z");
 
-const clubEl = document.getElementById("club");
-const riderEl = document.getElementById("rider");
-const cancelBtn = document.getElementById("cancelBtn");
-const clearBtn = document.getElementById("clearBtn");
-const statusEl = document.getElementById("status");
-const overlay = document.getElementById("overlay");
-const overlayText = document.getElementById("overlayText");
-const overlaySub = document.getElementById("overlaySub");
-const progressBar = document.getElementById("progressBar");
-const gatePBEl = document.getElementById("gatePB");
-const lapPBEl = document.getElementById("lapPB");
-const monthlySection = document.getElementById("monthlySection");
-const monthlyTableBody = document.querySelector("#monthlyTable tbody");
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+const PROXY_URL =
+"https://sqorz-proxy.hudsondaley55.workers.dev?url=";
+
+/*
+   PB DATA STARTS HERE.
+   January and February are deliberately ignored.
+*/
+
+const PB_START_DATE =
+new Date("2026-03-01T00:00:00Z");
+
+
+/*
+   GATE RANGE REQUESTED:
+   1.300 - 5.000 seconds
+*/
+
+const MIN_GATE_TIME = 1.300;
+const MAX_GATE_TIME = 5.000;
+
+
+/*
+   NORMAL BMX LAP RANGE.
+*/
+
+const MIN_LAP_TIME = 20.000;
+const MAX_LAP_TIME = 90.000;
+
+
+/* =========================================================
+   ELEMENTS
+   ========================================================= */
+
+const clubEl =
+document.getElementById("club");
+
+const riderEl =
+document.getElementById("rider");
+
+const cancelBtn =
+document.getElementById("cancelBtn");
+
+const clearBtn =
+document.getElementById("clearBtn");
+
+const statusEl =
+document.getElementById("status");
+
+const overlay =
+document.getElementById("overlay");
+
+const overlayText =
+document.getElementById("overlayText");
+
+const overlaySub =
+document.getElementById("overlaySub");
+
+const progressBar =
+document.getElementById("progressBar");
+
+const gatePBEl =
+document.getElementById("gatePB");
+
+const lapPBEl =
+document.getElementById("lapPB");
+
+const monthlySection =
+document.getElementById("monthlySection");
+
+const monthlyTableBody =
+document.querySelector("#monthlyTable tbody");
+
+
+/* =========================================================
+   DATA
+   ========================================================= */
 
 let ridersData = {};
+
 let abortController = null;
+
 let isScanning = false;
 
+
+/* =========================================================
+   FETCH
+   ========================================================= */
+
 async function fetchJsonWithAbort(url, signal) {
+
   let finalUrl = url;
-  if (url.startsWith("/")) finalUrl = `https://our.sqorz.com${url}`;
-  if (PROXY_URL && PROXY_URL.length) {
-    finalUrl = PROXY_URL + encodeURIComponent(finalUrl);
+
+  if (url.startsWith("/")) {
+    finalUrl = `https://our.sqorz.com${url}`;
   }
-  const res = await fetch(finalUrl, { signal });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+
+  if (PROXY_URL) {
+    finalUrl =
+      PROXY_URL +
+      encodeURIComponent(finalUrl);
+  }
+
+  const response =
+    await fetch(finalUrl,{signal});
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json();
 }
 
+
+/* =========================================================
+   FIND EVENT IDS
+   ========================================================= */
+
 function collectEventIdsFromOrgJson(obj) {
+
   const ids = new Set();
-  const pattern = /[a-f0-9]{24}/gi;
-  const strData = JSON.stringify(obj);
-  const matches = strData.match(pattern);
+
+  const pattern =
+    /[a-f0-9]{24}/gi;
+
+  const text =
+    JSON.stringify(obj);
+
+  const matches =
+    text.match(pattern);
+
   if (matches) {
-    matches.forEach(id => ids.add(id));
+
+    matches.forEach(id => {
+      ids.add(id);
+    });
+
   }
+
   return Array.from(ids);
 }
 
-function extractRiderNameFromNode(node) {
-  if (!node || typeof node !== "object") return null;
 
-  const first = node.firstName || node.fname || node.givenName;
-  const last = node.lastName || node.lname || node.familyName;
-  if (first && last && typeof first === "string" && typeof last === "string") {
-    const combined = `${first.trim()} ${last.trim()}`.trim();
-    if (combined.length > 2) return formatName(combined);
+/* =========================================================
+   NAME FORMATTING
+   ========================================================= */
+
+function formatName(name) {
+
+  if (!name) return "";
+
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+
+/* =========================================================
+   REAL TIMING EXTRACTION
+   =========================================================
+
+   IMPORTANT:
+
+   We DO NOT scan random numbers anymore.
+
+   Sqorz gives us:
+
+       hillTime = gate
+       time     = full lap
+
+   Therefore we ONLY read those two fields.
+*/
+
+
+function parseTime(value) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return null;
   }
 
-  const candidates = ["name", "riderName", "rider", "fullName"];
-  for (const key of candidates) {
-    if (node[key] && typeof node[key] === "string") {
-      const s = node[key].trim();
-      const lower = s.toLowerCase();
-      if (
-        s.length > 2 &&
-        !/^\d+$/.test(s) &&
-        !lower.includes("bmx club") &&
-        !lower.includes("official result") &&
-        !lower.includes("round ") &&
-        !lower.includes("class")
-      ) {
-        return formatName(s);
+  const number =
+    parseFloat(value);
+
+  if (
+    !Number.isFinite(number) ||
+    number <= 0
+  ) {
+    return null;
+  }
+
+  return number;
+}
+
+
+function isValidGateTime(time) {
+
+  return (
+    time >= MIN_GATE_TIME &&
+    time <= MAX_GATE_TIME
+  );
+
+}
+
+
+function isValidLapTime(time) {
+
+  return (
+    time >= MIN_LAP_TIME &&
+    time <= MAX_LAP_TIME
+  );
+
+}
+
+
+/* =========================================================
+   EXTRACT REAL RIDER TIMINGS
+   ========================================================= */
+
+function extractRealRiderTimings(
+  eventJson,
+  eventDate,
+  ridersMap
+) {
+
+  function scan(node) {
+
+    if (!node) return;
+
+    if (Array.isArray(node)) {
+
+      for (const item of node) {
+        scan(item);
       }
+
+      return;
     }
+
+    if (
+      typeof node !== "object"
+    ) {
+      return;
+    }
+
+
+    /*
+       THIS is the important Sqorz structure:
+
+       firstName
+       lastName
+       competitorRankDetails
+    */
+
+    if (
+      node.firstName &&
+      node.lastName &&
+      Array.isArray(
+        node.competitorRankDetails
+      )
+    ) {
+
+      const name =
+        formatName(
+          `${node.firstName} ${node.lastName}`
+        );
+
+
+      for (
+        const detail
+        of node.competitorRankDetails
+      ) {
+
+        if (
+          !detail ||
+          typeof detail !== "object"
+        ) {
+          continue;
+        }
+
+
+        /*
+           Ignore anything that isn't an
+           actual timed run.
+        */
+
+        const gate =
+          parseTime(detail.hillTime);
+
+        const lap =
+          parseTime(detail.time);
+
+
+        /*
+           GATE TIME
+           Only hillTime is accepted.
+        */
+
+        if (
+          gate !== null &&
+          isValidGateTime(gate)
+        ) {
+
+          if (!ridersMap[name]) {
+            ridersMap[name] = [];
+          }
+
+          ridersMap[name].push({
+            date:eventDate,
+            gate:gate,
+            lap:null,
+            phase:detail.phaseName || "",
+            race:detail.raceName || ""
+          });
+
+        }
+
+
+        /*
+           FULL LAP TIME
+           Only "time" is accepted.
+        */
+
+        if (
+          lap !== null &&
+          isValidLapTime(lap)
+        ) {
+
+          if (!ridersMap[name]) {
+            ridersMap[name] = [];
+          }
+
+          ridersMap[name].push({
+            date:eventDate,
+            gate:null,
+            lap:lap,
+            phase:detail.phaseName || "",
+            race:detail.raceName || ""
+          });
+
+        }
+
+      }
+
+    }
+
+
+    /*
+       Continue searching through the JSON.
+    */
+
+    for (const key of Object.keys(node)) {
+
+      const value = node[key];
+
+      if (
+        value &&
+        typeof value === "object"
+      ) {
+        scan(value);
+      }
+
+    }
+
   }
 
-  return null;
+
+  scan(eventJson);
+
 }
 
-function formatName(str) {
-  return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-}
 
-function parseToSeconds(value) {
-  if (value == null) return null;
-  if (typeof value === "number") return value;
-  if (typeof value !== "string") return null;
-  const s = value.trim();
-  if (!s) return null;
-  if (s.includes(":")) {
-    const parts = s.split(":").map(p => p.trim());
-    if (parts.length === 2) {
-      const mins = parseFloat(parts[0]);
-      const secs = parseFloat(parts[1]);
-      if (!isNaN(mins) && !isNaN(secs)) return mins * 60 + secs;
+/* =========================================================
+   EVENT DATE
+   =========================================================
+
+   Sqorz event JSON has:
+
+   eventDate: "2026-05-15"
+
+   We specifically prefer eventDate so that
+   timestamps inside individual classes don't
+   accidentally become the event date.
+*/
+
+function extractEventDate(eventJson) {
+
+  if (
+    eventJson &&
+    eventJson.eventDate
+  ) {
+
+    const date =
+      new Date(
+        eventJson.eventDate +
+        "T00:00:00Z"
+      );
+
+    if (!isNaN(date.getTime())) {
+      return date;
     }
+
   }
-  const num = parseFloat(s.replace(/[^\d.\-]/g,""));
-  if (isNaN(num)) return null;
-  if (num >= 1000 && num < 120000) return num / 1000;
-  return num;
+
+
+  /*
+     Backup search.
+  */
+
+  let found = null;
+
+  function search(node) {
+
+    if (!node || found) return;
+
+    if (Array.isArray(node)) {
+
+      for (const item of node) {
+        search(item);
+      }
+
+      return;
+    }
+
+    if (
+      typeof node !== "object"
+    ) {
+      return;
+    }
+
+
+    for (
+      const key of Object.keys(node)
+    ) {
+
+      const lower =
+        key.toLowerCase();
+
+      if (
+        lower === "eventdate" ||
+        lower === "startdate"
+      ) {
+
+        const value =
+          node[key];
+
+        const date =
+          new Date(value);
+
+        if (
+          !isNaN(date.getTime()) &&
+          date.getFullYear() >= 2020
+        ) {
+
+          found = date;
+          return;
+
+        }
+
+      }
+
+
+      if (
+        node[key] &&
+        typeof node[key] === "object"
+      ) {
+        search(node[key]);
+      }
+
+    }
+
+  }
+
+  search(eventJson);
+
+  return found;
+
 }
 
-function extractTimingsFromNode(node) {
-  let gates = [];
-  let laps = [];
-  if (!node || typeof node !== "object") return { gates, laps };
 
-  const IGNORE_KEYS = [
-    "name","ridername","rider","fullname","firstname","lastname","fname","lname",
-    "minlaptime","targetlap","gatecutoff","tracklength","cutoff","duration"
-  ];
+/* =========================================================
+   UI
+   ========================================================= */
 
-  for (const key of Object.keys(node)) {
-    const val = node[key];
-    const keyLower = key.toLowerCase();
-    if (IGNORE_KEYS.includes(keyLower)) continue;
-    
-    if (typeof val === "object") {
-      const nested = extractTimingsFromNode(val);
-      gates.push(...nested.gates);
-      laps.push(...nested.laps);
+function showOverlay(
+  text,
+  sub
+) {
+
+  overlayText.textContent =
+    text || "Working...";
+
+  overlaySub.textContent =
+    sub || "";
+
+  progressBar.style.width =
+    "0%";
+
+  overlay.classList.add("show");
+
+}
+
+
+function hideOverlay() {
+
+  overlay.classList.remove("show");
+
+}
+
+
+function setProgress(
+  percent,
+  sub
+) {
+
+  progressBar.style.width =
+    `${percent}%`;
+
+  overlaySub.textContent =
+    sub || "";
+
+}
+
+
+/* =========================================================
+   START CLUB SCAN
+   ========================================================= */
+
+async function startClubScan() {
+
+  const clubCode =
+    clubEl.value;
+
+
+  riderEl.innerHTML =
+    '<option value="">-- Loading Riders... --</option>';
+
+  riderEl.disabled = true;
+
+  gatePBEl.textContent =
+    "--";
+
+  lapPBEl.textContent =
+    "--";
+
+  monthlySection.style.display =
+    "none";
+
+  monthlyTableBody.innerHTML =
+    "";
+
+
+  if (!clubCode) {
+
+    statusEl.textContent =
+      "Please select a club first.";
+
+    riderEl.innerHTML =
+      '<option value="">-- Select a Club First --</option>';
+
+    return;
+
+  }
+
+
+  const clubInfo =
+    CLUBS[clubCode];
+
+  if (!clubInfo) return;
+
+
+  if (abortController) {
+
+    try {
+      abortController.abort();
+    } catch(e) {}
+
+  }
+
+
+  abortController =
+    new AbortController();
+
+  const signal =
+    abortController.signal;
+
+  cancelBtn.disabled =
+    false;
+
+  isScanning = true;
+
+
+  statusEl.textContent =
+    `Scanning ${clubInfo.name} data...`;
+
+  showOverlay(
+    `Scanning ${clubInfo.name}...`,
+    "Fetching event list..."
+  );
+
+
+  try {
+
+    let eventIds = [];
+
+
+    /*
+       First try the club's organisation
+       endpoint.
+    */
+
+    try {
+
+      const orgJson =
+        await fetchJsonWithAbort(
+          `/json/org/${clubCode}`,
+          signal
+        );
+
+      eventIds =
+        collectEventIdsFromOrgJson(
+          orgJson
+        );
+
+    } catch(e) {
+
+      console.warn(
+        "Could not fetch organisation JSON.",
+        e
+      );
+
+    }
+
+
+    /*
+       Use fallback events if necessary.
+    */
+
+    if (
+      eventIds.length === 0 &&
+      clubInfo.fallbackEvents &&
+      clubInfo.fallbackEvents.length
+    ) {
+
+      eventIds =
+        clubInfo.fallbackEvents;
+
+    }
+
+
+    if (!eventIds.length) {
+
+      hideOverlay();
+
+      statusEl.textContent =
+        `No events found for ${clubInfo.name}.`;
+
+      riderEl.innerHTML =
+        '<option value="">No Riders Found</option>';
+
+      cancelBtn.disabled =
+        true;
+
+      isScanning =
+        false;
+
+      return;
+
+    }
+
+
+    ridersData = {};
+
+
+    const total =
+      eventIds.length;
+
+    let processed = 0;
+
+
+    /*
+       Scan every event.
+    */
+
+    for (
+      const eventId
+      of eventIds
+    ) {
+
+      if (signal.aborted) {
+        throw new Error("Scan cancelled");
+      }
+
+
+      setProgress(
+        Math.round(
+          (processed / total) * 100
+        ),
+        `Loading event ${processed + 1} of ${total}`
+      );
+
+
+      try {
+
+        const eventJson =
+          await fetchJsonWithAbort(
+            `/json/event/${eventId}`,
+            signal
+          );
+
+
+        /*
+           Get the ACTUAL event date.
+        */
+
+        const eventDate =
+          extractEventDate(
+            eventJson
+          );
+
+
+        /*
+           Only March 2026 onward.
+        */
+
+        if (
+          eventDate &&
+          eventDate >= PB_START_DATE
+        ) {
+
+          extractRealRiderTimings(
+            eventJson,
+            eventDate,
+            ridersData
+          );
+
+        }
+
+      } catch(e) {
+
+        console.warn(
+          "Event fetch error:",
+          eventId,
+          e
+        );
+
+      }
+
+
+      processed++;
+
+
+      setProgress(
+        Math.round(
+          (processed / total) * 100
+        ),
+        `Processed ${processed} / ${total} events`
+      );
+
+
+      await new Promise(
+        resolve => setTimeout(resolve,40)
+      );
+
+    }
+
+
+    setProgress(
+      100,
+      "Finalizing rider list..."
+    );
+
+
+    const riderNames =
+      Object.keys(ridersData)
+        .sort(
+          (a,b) =>
+            a.localeCompare(
+              b,
+              undefined,
+              {sensitivity:"base"}
+            )
+        );
+
+
+    if (!riderNames.length) {
+
+      hideOverlay();
+
+      statusEl.textContent =
+        "No riders with genuine timing data were found from March 2026 onward.";
+
+      riderEl.innerHTML =
+        '<option value="">No Riders Found</option>';
+
+      cancelBtn.disabled =
+        true;
+
+      isScanning =
+        false;
+
+      return;
+
+    }
+
+
+    riderEl.innerHTML =
+      '<option value="">-- Select a Rider --</option>';
+
+
+    for (
+      const name
+      of riderNames
+    ) {
+
+      const option =
+        document.createElement("option");
+
+      option.value =
+        name;
+
+      option.textContent =
+        name;
+
+      riderEl.appendChild(option);
+
+    }
+
+
+    riderEl.disabled =
+      false;
+
+
+    statusEl.textContent =
+      `Loaded ${riderNames.length} riders!`;
+
+    hideOverlay();
+
+    cancelBtn.disabled =
+      true;
+
+    isScanning =
+      false;
+
+
+  } catch(err) {
+
+    console.error(
+      "Club scan error:",
+      err
+    );
+
+    hideOverlay();
+
+
+    if (
+      err.name === "AbortError" ||
+      err.message === "Scan cancelled"
+    ) {
+
+      statusEl.textContent =
+        "Scan cancelled.";
+
+      riderEl.innerHTML =
+        '<option value="">-- Select a Club First --</option>';
+
+    } else {
+
+      statusEl.textContent =
+        "Error loading riders. Check connection.";
+
+      riderEl.innerHTML =
+        '<option value="">Error Loading Riders</option>';
+
+    }
+
+
+    cancelBtn.disabled =
+      true;
+
+    isScanning =
+      false;
+
+  }
+
+}
+
+
+/* =========================================================
+   CANCEL
+   ========================================================= */
+
+cancelBtn.addEventListener(
+  "click",
+  () => {
+
+    if (
+      !isScanning ||
+      !abortController
+    ) return;
+
+
+    try {
+      abortController.abort();
+    } catch(e) {}
+
+
+    cancelBtn.disabled =
+      true;
+
+    setProgress(
+      0,
+      "Cancelling..."
+    );
+
+  }
+);
+
+
+/* =========================================================
+   CLEAR
+   ========================================================= */
+
+clearBtn.addEventListener(
+  "click",
+  () => {
+
+    if (
+      isScanning &&
+      abortController
+    ) {
+
+      try {
+        abortController.abort();
+      } catch(e) {}
+
+    }
+
+
+    clubEl.value =
+      "";
+
+    riderEl.innerHTML =
+      '<option value="">-- Select a Club First --</option>';
+
+    riderEl.disabled =
+      true;
+
+    gatePBEl.textContent =
+      "--";
+
+    lapPBEl.textContent =
+      "--";
+
+    monthlySection.style.display =
+      "none";
+
+    monthlyTableBody.innerHTML =
+      "";
+
+    statusEl.textContent =
+      "Cleared.";
+
+    hideOverlay();
+
+    cancelBtn.disabled =
+      true;
+
+    isScanning =
+      false;
+
+  }
+);
+
+
+/* =========================================================
+   MONTHLY PB TABLE
+   ========================================================= */
+
+function showMonthlyPBs(
+  records
+) {
+
+  monthlyTableBody.innerHTML =
+    "";
+
+
+  /*
+     Start EXACTLY at March 2026.
+  */
+
+  const start =
+    new Date(
+      "2026-03-01T00:00:00Z"
+    );
+
+
+  const now =
+    new Date();
+
+
+  const monthMap =
+    {};
+
+
+  /*
+     Create March through current month.
+  */
+
+  let cursor =
+    new Date(start);
+
+
+  while (
+    cursor.getTime() <= now.getTime()
+  ) {
+
+    const year =
+      cursor.getUTCFullYear();
+
+    const month =
+      cursor.getUTCMonth() + 1;
+
+
+    const key =
+      `${year}-${String(month).padStart(2,"0")}`;
+
+
+    const label =
+      cursor.toLocaleString(
+        "en-AU",
+        {
+          month:"long",
+          year:"numeric",
+          timeZone:"UTC"
+        }
+      );
+
+
+    monthMap[key] = {
+      label:label,
+      gates:[],
+      laps:[]
+    };
+
+
+    cursor.setUTCMonth(
+      cursor.getUTCMonth() + 1
+    );
+
+  }
+
+
+  /*
+     Put every real timing into
+     its correct month.
+  */
+
+  for (
+    const record
+    of records
+  ) {
+
+    if (!record.date) continue;
+
+
+    const date =
+      new Date(record.date);
+
+
+    if (
+      isNaN(date.getTime()) ||
+      date < start
+    ) {
       continue;
     }
 
-    const seconds = parseToSeconds(val);
-    if (seconds == null || seconds <= 0) continue;
 
-    // Filter out dummy test placeholders (e.g. exactly 26.0s or 1.32s gate test values)
-    if (Math.abs(seconds - 26.0) < 0.001) continue;
+    const key =
+      `${date.getUTCFullYear()}-${String(
+        date.getUTCMonth()+1
+      ).padStart(2,"0")}`;
 
-    // REALISTIC BMX RANGE FILTER
-    if (seconds >= 1.800 && seconds <= 5.000) {
-      gates.push(seconds);
+
+    if (!monthMap[key]) {
+      continue;
     }
-    if (seconds >= 27.000 && seconds <= 90.000) {
-      laps.push(seconds);
+
+
+    if (
+      record.gate !== null &&
+      record.gate !== undefined
+    ) {
+
+      monthMap[key]
+        .gates
+        .push(record.gate);
+
     }
-  }
-  return { gates, laps };
-}
 
-function deepScanEventForRiders(eventJson, eventDate, ridersMap) {
-  function scan(node, currentName = null) {
-    if (!node) return;
-    if (Array.isArray(node)) { node.forEach(item => scan(item, currentName)); return; }
-    if (typeof node === "object") {
-      const foundName = extractRiderNameFromNode(node);
-      const activeName = foundName ? foundName : currentName;
-      const { gates, laps } = extractTimingsFromNode(node);
-      if (activeName && (gates.length || laps.length)) {
-        if (!ridersMap[activeName]) ridersMap[activeName] = [];
-        if (gates.length) gates.forEach(g => ridersMap[activeName].push({ date: eventDate, gate: g, lap: null }));
-        if (laps.length) laps.forEach(l => ridersMap[activeName].push({ date: eventDate, gate: null, lap: l }));
-      }
-      for (const k of Object.keys(node)) {
-        if (typeof node[k] === "object") scan(node[k], activeName);
-      }
+
+    if (
+      record.lap !== null &&
+      record.lap !== undefined
+    ) {
+
+      monthMap[key]
+        .laps
+        .push(record.lap);
+
     }
-  }
-  scan(eventJson, null);
-}
 
-function extractEventDate(eventJson) {
-  // Deep search for event dates inside JSON structure
-  let foundDate = null;
-  function searchForDate(obj) {
-    if (!obj || foundDate) return;
-    if (typeof obj === "object") {
-      for (const key of Object.keys(obj)) {
-        const lowerKey = key.toLowerCase();
-        if (["startdate", "date", "datetime", "created", "starttime"].includes(lowerKey)) {
-          const val = obj[key];
-          if (typeof val === "string" || typeof val === "number") {
-            const parsed = new Date(val);
-            if (!isNaN(parsed.getTime()) && parsed.getFullYear() >= 2020) {
-              foundDate = parsed;
-              return;
-            }
-          }
-        }
-        if (typeof obj[key] === "object") searchForDate(obj[key]);
-      }
-    }
-  }
-  searchForDate(eventJson);
-  return foundDate;
-}
-
-function showOverlay(text, sub) {
-  overlayText.textContent = text || "Working...";
-  overlaySub.textContent = sub || "";
-  progressBar.style.width = "0%";
-  overlay.classList.add("show");
-  overlay.setAttribute("aria-hidden", "false");
-}
-
-function hideOverlay() {
-  overlay.classList.remove("show");
-  overlay.setAttribute("aria-hidden", "true");
-}
-
-function setProgress(percent, sub) {
-  progressBar.style.width = `${percent}%`;
-  overlaySub.textContent = sub || "";
-}
-
-async function startClubScan() {
-  const clubCode = clubEl.value;
-  riderEl.innerHTML = '<option value="">-- Loading Riders... --</option>';
-  riderEl.disabled = true;
-  gatePBEl.textContent = "--";
-  lapPBEl.textContent = "--";
-  monthlySection.style.display = "none";
-  monthlyTableBody.innerHTML = "";
-
-  if (!clubCode) {
-    statusEl.textContent = "Please select a club first.";
-    riderEl.innerHTML = '<option value="">-- Select a Club First --</option>';
-    return;
   }
 
-  const clubInfo = CLUBS[clubCode];
-  if (!clubInfo) return;
 
-  if (abortController) {
-    try { abortController.abort(); } catch(e) {}
-  }
-  abortController = new AbortController();
-  const signal = abortController.signal;
-  cancelBtn.disabled = false;
-  isScanning = true;
+  /*
+     Display every month.
+  */
 
-  statusEl.textContent = `Scanning ${clubInfo.name} data...`;
-  showOverlay(`Scanning ${clubInfo.name}...`, "Fetching event list...");
+  for (
+    const key
+    of Object.keys(monthMap)
+  ) {
 
-  try {
-    let eventIds = [];
+    const month =
+      monthMap[key];
 
-    try {
-      const orgJson = await fetchJsonWithAbort(`/json/org/${clubCode}`, signal);
-      eventIds = collectEventIdsFromOrgJson(orgJson);
-    } catch (e) {
-      console.warn("Could not fetch org JSON, falling back to static event list.");
-    }
 
-    if (eventIds.length === 0 && clubInfo.fallbackEvents && clubInfo.fallbackEvents.length > 0) {
-      eventIds = clubInfo.fallbackEvents;
-    }
+    const bestGate =
+      month.gates.length
+        ? Math.min(...month.gates)
+        : null;
 
-    if (!eventIds.length) {
-      hideOverlay();
-      statusEl.textContent = `No events found for ${clubInfo.name}.`;
-      riderEl.innerHTML = '<option value="">No Riders Found</option>';
-      cancelBtn.disabled = true;
-      isScanning = false;
-      return;
-    }
 
-    ridersData = {};
-    const total = eventIds.length;
-    let processed = 0;
+    const bestLap =
+      month.laps.length
+        ? Math.min(...month.laps)
+        : null;
 
-    for (const eventId of eventIds) {
-      if (signal.aborted) throw new Error("Scan cancelled");
-      setProgress(Math.round((processed / total) * 100), `Loading event ${processed + 1} of ${total}`);
-      try {
-        const eventJson = await fetchJsonWithAbort(`/json/event/${eventId}`, signal);
-        const eventDate = extractEventDate(eventJson);
 
-        // Include events strictly from March 2026 onwards
-        if (!eventDate || eventDate >= MARCH_2026_CUTOFF) {
-          deepScanEventForRiders(eventJson, eventDate || new Date(), ridersData);
-        }
-      } catch (e) {
-        console.warn("Event fetch/scan error", eventId, e);
-      }
-      processed++;
-      setProgress(Math.round((processed / total) * 100), `Processed ${processed} / ${total} events`);
-      await new Promise(r => setTimeout(r, 40));
-    }
+    const tr =
+      document.createElement("tr");
 
-    setProgress(100, "Finalizing rider list...");
-    const riderNames = Object.keys(ridersData).sort((a,b) => a.localeCompare(b, undefined, {sensitivity:'base'}));
 
-    if (!riderNames.length) {
-      hideOverlay();
-      statusEl.textContent = `No riders found with valid timing data from March 2026 onwards.`;
-      riderEl.innerHTML = '<option value="">No Riders Found</option>';
-      cancelBtn.disabled = true;
-      isScanning = false;
-      return;
-    }
+    const monthCell =
+      document.createElement("td");
 
-    riderEl.innerHTML = '<option value="">-- Select a Rider --</option>';
-    for (const name of riderNames) {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      riderEl.appendChild(opt);
-    }
-    riderEl.disabled = false;
-    statusEl.textContent = `Loaded ${riderNames.length} riders!`;
-    hideOverlay();
-    cancelBtn.disabled = true;
-    isScanning = false;
+    monthCell.textContent =
+      month.label;
 
-  } catch (err) {
-    console.error("Club scan error:", err);
-    hideOverlay();
-    if (err.name === "AbortError" || err.message === "Scan cancelled") {
-      statusEl.textContent = "Scan cancelled.";
-      riderEl.innerHTML = '<option value="">-- Select a Club First --</option>';
-    } else {
-      statusEl.textContent = "Error loading riders. Check connection.";
-      riderEl.innerHTML = '<option value="">Error Loading Riders</option>';
-    }
-    cancelBtn.disabled = true;
-    isScanning = false;
-  }
-}
 
-cancelBtn.addEventListener("click", () => {
-  if (!isScanning || !abortController) return;
-  try {
-    abortController.abort();
-  } catch (e) {}
-  cancelBtn.disabled = true;
-  setProgress(0, "Cancelling...");
-});
+    const gateCell =
+      document.createElement("td");
 
-clearBtn.addEventListener("click", () => {
-  if (isScanning && abortController) {
-    try { abortController.abort(); } catch(e) {}
-  }
-  clubEl.value = "";
-  riderEl.innerHTML = '<option value="">-- Select a Club First --</option>';
-  riderEl.disabled = true;
-  gatePBEl.textContent = "--";
-  lapPBEl.textContent = "--";
-  monthlySection.style.display = "none";
-  monthlyTableBody.innerHTML = "";
-  statusEl.textContent = "Cleared.";
-  hideOverlay();
-  cancelBtn.disabled = true;
-  isScanning = false;
-});
+    gateCell.textContent =
+      bestGate !== null
+        ? `${bestGate.toFixed(3)}s`
+        : "—";
 
-riderEl.addEventListener("change", () => {
-  const name = riderEl.value;
-  gatePBEl.textContent = "--";
-  lapPBEl.textContent = "--";
-  monthlySection.style.display = "none";
-  monthlyTableBody.innerHTML = "";
 
-  if (!name) {
-    statusEl.textContent = "Select a rider to view PBs.";
-    return;
-  }
-  statusEl.textContent = `Calculating PBs for ${name}...`;
+    const lapCell =
+      document.createElement("td");
 
-  const records = ridersData[name] || [];
-  if (!records.length) {
-    statusEl.textContent = `No timing records found for ${name}.`;
-    return;
-  }
+    lapCell.textContent =
+      bestLap !== null
+        ? `${bestLap.toFixed(3)}s`
+        : "—";
 
-  // Calculate Overall PBs
-  const gates = records.filter(r => r.gate != null).map(r => r.gate);
-  const laps = records.filter(r => r.lap != null).map(r => r.lap);
-  const bestGate = gates.length ? Math.min(...gates) : null;
-  const bestLap = laps.length ? Math.min(...laps) : null;
-  gatePBEl.textContent = bestGate !== null ? `${bestGate.toFixed(3)}s` : "N/A";
-  lapPBEl.textContent = bestLap !== null ? `${bestLap.toFixed(3)}s` : "N/A";
 
-  // Build full monthly progression table starting from March 2026 to current date
-  const monthMap = {};
-  const start = new Date("2026-03-01T00:00:00Z");
-  const now = new Date();
-  const currentCursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    tr.appendChild(monthCell);
+    tr.appendChild(gateCell);
+    tr.appendChild(lapCell);
 
-  while (currentCursor <= now) {
-    const key = `${currentCursor.getFullYear()}-${String(currentCursor.getMonth()+1).padStart(2,"0")}`;
-    const label = currentCursor.toLocaleString("default", { month: "short", year: "numeric" });
-    monthMap[key] = { label, sortKey: key, gates: [], laps: [] };
-    currentCursor.setMonth(currentCursor.getMonth() + 1);
-  }
 
-  for (const rec of records) {
-    if (!rec.date) continue;
-    const dt = new Date(rec.date);
-    if (isNaN(dt.getTime())) continue;
-
-    const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;
-    if (monthMap[key]) {
-      if (rec.gate != null) monthMap[key].gates.push(rec.gate);
-      if (rec.lap != null) monthMap[key].laps.push(rec.lap);
-    }
-  }
-
-  const sortedMonths = Object.values(monthMap).sort((a,b) => a.sortKey.localeCompare(b.sortKey));
-
-  monthlyTableBody.innerHTML = "";
-  for (const b of sortedMonths) {
-    const bestG = b.gates.length ? Math.min(...b.gates) : null;
-    const bestL = b.laps.length ? Math.min(...b.laps) : null;
-    const tr = document.createElement("tr");
-    const tdMonth = document.createElement("td"); tdMonth.textContent = b.label;
-    const tdGate = document.createElement("td"); tdGate.textContent = bestG !== null ? `${bestG.toFixed(3)}s` : "—";
-    const tdLap = document.createElement("td"); tdLap.textContent = bestL !== null ? `${bestL.toFixed(3)}s` : "—";
-    tr.appendChild(tdMonth); tr.appendChild(tdGate); tr.appendChild(tdLap);
     monthlyTableBody.appendChild(tr);
+
   }
 
-  monthlySection.style.display = "block";
-  statusEl.textContent = `Showing PBs for ${name}.`;
-});
+
+  monthlySection.style.display =
+    "block";
+
+}
+
+
+/* =========================================================
+   RIDER SELECTED
+   ========================================================= */
+
+riderEl.addEventListener(
+  "change",
+  () => {
+
+    const name =
+      riderEl.value;
+
+
+    gatePBEl.textContent =
+      "--";
+
+    lapPBEl.textContent =
+      "--";
+
+
+    monthlySection.style.display =
+      "none";
+
+    monthlyTableBody.innerHTML =
+      "";
+
+
+    if (!name) {
+
+      statusEl.textContent =
+        "Select a rider to view PBs.";
+
+      return;
+
+    }
+
+
+    statusEl.textContent =
+      `Calculating PBs for ${name}...`;
+
+
+    const records =
+      ridersData[name] || [];
+
+
+    if (!records.length) {
+
+      statusEl.textContent =
+        `No genuine timing records found for ${name}.`;
+
+      return;
+
+    }
+
+
+    /*
+       Get only genuine gate records.
+    */
+
+    const gates =
+      records
+        .filter(
+          record =>
+            record.gate !== null
+        )
+        .map(
+          record =>
+            record.gate
+        );
+
+
+    /*
+       Get only genuine lap records.
+    */
+
+    const laps =
+      records
+        .filter(
+          record =>
+            record.lap !== null
+        )
+        .map(
+          record =>
+            record.lap
+        );
+
+
+    /*
+       Overall PBs.
+    */
+
+    const bestGate =
+      gates.length
+        ? Math.min(...gates)
+        : null;
+
+
+    const bestLap =
+      laps.length
+        ? Math.min(...laps)
+        : null;
+
+
+    gatePBEl.textContent =
+      bestGate !== null
+        ? `${bestGate.toFixed(3)}s`
+        : "N/A";
+
+
+    lapPBEl.textContent =
+      bestLap !== null
+        ? `${bestLap.toFixed(3)}s`
+        : "N/A";
+
+
+    /*
+       Build March → current month table.
+    */
+
+    showMonthlyPBs(
+      records
+    );
+
+
+    statusEl.textContent =
+      `Showing PBs for ${name}.`;
+
+  }
+);
+
 </script>
+
 </body>
 </html>
