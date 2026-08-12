@@ -125,11 +125,11 @@
 
       <div class="cards">
         <div class="card">
-          <div class="card-title">Gate PB</div>
+          <div class="card-title">Overall Gate PB</div>
           <div class="card-value" id="gatePB">--</div>
         </div>
         <div class="card">
-          <div class="card-title">Whole Lap PB</div>
+          <div class="card-title">Overall Whole Lap PB</div>
           <div class="card-value" id="lapPB">--</div>
         </div>
       </div>
@@ -143,7 +143,7 @@
           </thead>
           <tbody></tbody>
         </table>
-        <div class="pb-note">Monthly PBs starting from March 2026. Months with no data show "—".</div>
+        <div class="pb-note">Monthly fastest times recorded per event month.</div>
       </div>
     </div>
   </div>
@@ -286,10 +286,16 @@ function extractTimingsFromNode(node) {
   let gates = [];
   let laps = [];
   if (!node || typeof node !== "object") return { gates, laps };
+
+  const IGNORE_KEYS = [
+    "name","ridername","rider","fullname","firstname","lastname","fname","lname",
+    "minlaptime","targetlap","gatecutoff","tracklength","cutoff","duration"
+  ];
+
   for (const key of Object.keys(node)) {
     const val = node[key];
     const keyLower = key.toLowerCase();
-    if (["name","ridername","rider","fullname","firstname","lastname","fname","lname"].includes(keyLower)) continue;
+    if (IGNORE_KEYS.includes(keyLower)) continue;
     
     if (typeof val === "object") {
       const nested = extractTimingsFromNode(val);
@@ -297,10 +303,22 @@ function extractTimingsFromNode(node) {
       laps.push(...nested.laps);
       continue;
     }
+
     const seconds = parseToSeconds(val);
     if (seconds == null || seconds <= 0) continue;
-    if (seconds >= 1.200 && seconds <= 5.000) gates.push(seconds);
-    if (seconds >= 26.000 && seconds <= 90.000) laps.push(seconds);
+
+    // Filter out dummy/placeholder values (e.g., exact 26.0s or 1.32s test values)
+    if (Math.abs(seconds - 26.0) < 0.001) continue; 
+
+    // REALISTIC BMX RANGE CRITERIA
+    // Gate/Hill Time: Realistically between 1.800s and 5.000s
+    if (seconds >= 1.800 && seconds <= 5.000) {
+      gates.push(seconds);
+    }
+    // Full Lap Time: Realistically between 27.000s and 90.000s
+    if (seconds >= 27.000 && seconds <= 90.000) {
+      laps.push(seconds);
+    }
   }
   return { gates, laps };
 }
@@ -327,9 +345,9 @@ function deepScanEventForRiders(eventJson, eventDate, ridersMap) {
 }
 
 function extractEventDate(eventJson) {
-  const dateStr = eventJson.startDate || eventJson.date || eventJson.created || eventJson.startTime;
-  if (dateStr) {
-    const parsed = new Date(dateStr);
+  const candidate = eventJson.startDate || eventJson.date || eventJson.dateTime || eventJson.created || (eventJson.info && eventJson.info.startDate);
+  if (candidate) {
+    const parsed = new Date(candidate);
     if (!isNaN(parsed.getTime())) return parsed;
   }
   return null;
@@ -416,7 +434,7 @@ async function startClubScan() {
         const eventJson = await fetchJsonWithAbort(`/json/event/${eventId}`, signal);
         const eventDate = extractEventDate(eventJson);
 
-        // Filter out events strictly dated before March 2026
+        // Include events from March 2026 onwards (or undated ones)
         if (!eventDate || eventDate >= MARCH_2026_CUTOFF) {
           deepScanEventForRiders(eventJson, eventDate || new Date(), ridersData);
         }
@@ -433,7 +451,7 @@ async function startClubScan() {
 
     if (!riderNames.length) {
       hideOverlay();
-      statusEl.textContent = `No riders found in scanned events.`;
+      statusEl.textContent = `No riders found with valid timing data from March 2026 onwards.`;
       riderEl.innerHTML = '<option value="">No Riders Found</option>';
       cancelBtn.disabled = true;
       isScanning = false;
@@ -513,6 +531,7 @@ riderEl.addEventListener("change", () => {
     return;
   }
 
+  // Calculate Overall PBs
   const gates = records.filter(r => r.gate != null).map(r => r.gate);
   const laps = records.filter(r => r.lap != null).map(r => r.lap);
   const bestGate = gates.length ? Math.min(...gates) : null;
@@ -520,32 +539,31 @@ riderEl.addEventListener("change", () => {
   gatePBEl.textContent = bestGate !== null ? `${bestGate.toFixed(3)}s` : "N/A";
   lapPBEl.textContent = bestLap !== null ? `${bestLap.toFixed(3)}s` : "N/A";
 
-  const start = new Date("2026-03-01T00:00:00Z");
-  const now = new Date();
-  const months = [];
-  const m = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (m <= now) {
-    months.push(new Date(m.getTime()));
-    m.setMonth(m.getMonth() + 1);
-  }
-
-  const monthBuckets = months.map(d => {
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-    return { key, label: d.toLocaleString(undefined, { month: "short", year: "numeric" }), gates: [], laps: [] };
-  });
+  // Group Records into Monthly Buckets
+  const monthMap = {};
 
   for (const rec of records) {
     if (!rec.date) continue;
     const dt = new Date(rec.date);
+    if (isNaN(dt.getTime())) continue;
+
     const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;
-    const bucket = monthBuckets.find(b => b.key === key);
-    if (!bucket) continue;
-    if (rec.gate != null) bucket.gates.push(rec.gate);
-    if (rec.lap != null) bucket.laps.push(rec.lap);
+    if (!monthMap[key]) {
+      monthMap[key] = {
+        label: dt.toLocaleString(undefined, { month: "short", year: "numeric" }),
+        sortKey: key,
+        gates: [],
+        laps: []
+      };
+    }
+    if (rec.gate != null) monthMap[key].gates.push(rec.gate);
+    if (rec.lap != null) monthMap[key].laps.push(rec.lap);
   }
 
+  const sortedMonths = Object.values(monthMap).sort((a,b) => a.sortKey.localeCompare(b.sortKey));
+
   monthlyTableBody.innerHTML = "";
-  for (const b of monthBuckets) {
+  for (const b of sortedMonths) {
     const bestG = b.gates.length ? Math.min(...b.gates) : null;
     const bestL = b.laps.length ? Math.min(...b.laps) : null;
     const tr = document.createElement("tr");
@@ -556,7 +574,10 @@ riderEl.addEventListener("change", () => {
     monthlyTableBody.appendChild(tr);
   }
 
-  monthlySection.style.display = "block";
+  if (sortedMonths.length > 0) {
+    monthlySection.style.display = "block";
+  }
+
   statusEl.textContent = `Showing PBs for ${name}.`;
 });
 </script>
